@@ -35,10 +35,35 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  get: ^4.6.6
+  get_storage: ^2.1.1
+  firebase_core: ^3.6.0
+  geolocator: ^13.0.1
+  logger: ^2.4.0
+  http: ^1.2.2
+  dio: ^5.7.0
+  connectivity_plus: ^6.1.0
+  flutter_typeahead: ^5.2.0
+  new_version_plus: ^0.0.12
+  table_calendar: ^3.1.2
+  google_maps_flutter: ^2.9.0
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.1
+
+
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/MumbaiCRM.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  adaptive_icon_background: "#CFC9C6"
+  adaptive_icon_foreground: "assets/images/MumbaiCRM.png"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -59,8 +84,10 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - assets/images/
+    - assets/icons/
+
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

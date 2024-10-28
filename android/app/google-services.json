@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1096183180732",
+    "project_id": "lead-management-f7402",
+    "storage_bucket": "lead-management-f7402.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096183180732:android:ebe007f5f47c58173b0fb9",
+        "android_client_info": {
+          "package_name": "com.psmsofttech.leads"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmwPuSl1dzYYWUWJeEFMO6bzeOya0nVtk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
