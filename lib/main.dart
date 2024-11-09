@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/route_manager.dart';
@@ -12,6 +14,7 @@ import 'package:new_version_plus/new_version_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides();
 
   // Get Storage Init
   await GetStorage.init();
@@ -52,9 +55,20 @@ class App extends StatelessWidget {
         primaryColor: primary1Color,
         inputDecorationTheme: MyInputTheme().theme(),
         textTheme: Typography().black.apply(fontFamily: 'Poppins'),
-        useMaterial3: true
+        useMaterial3: true,
+          appBarTheme: AppBarTheme(
+
+            color: Color(0xFFE1FFED),
+          )
       ),
       enableLog: false,
     );
+  }
+}
+class MyHttpOverrides extends HttpOverrides{
+  @override
+  HttpClient createHttpClient(SecurityContext? context){
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port)=> true;
   }
 }

@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../../Tabs/homepage/home_page.dart';
-import '../../navbar/bottom_nav_bar.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_select.dart';
 import '../../widgets/custom_text_field.dart';
 import 'login_controller.dart';
-
 
 class LoginScreen extends StatelessWidget {
   LoginScreen({super.key});
@@ -33,9 +28,7 @@ class LoginScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    const SizedBox(
-                      height: 80,
-                    ),
+                    const SizedBox(height: 80),
 
                     // Logo
                     Image.asset(
@@ -43,20 +36,15 @@ class LoginScreen extends StatelessWidget {
                       fit: BoxFit.fitWidth,
                     ),
 
-                    const SizedBox(
-                      height: 60,
-                    ),
+                    const SizedBox(height: 60),
 
                     // Form
                     Form(
-                      key: controller.loginFormKey,
                       autovalidateMode: AutovalidateMode.always,
                       child: Column(
                         mainAxisSize: MainAxisSize.max,
                         children: [
-                          const SizedBox(
-                            height: 24,
-                          ),
+                          const SizedBox(height: 24),
                           CustomTextField(
                             labelText: "Email",
                             hintText: "Enter your email address",
@@ -66,17 +54,13 @@ class LoginScreen extends StatelessWidget {
                               if (value!.isEmpty) {
                                 return "This field is required";
                               }
-
-                              // if (!GetUtils.isEmail(value)) {
-                              //   return "Enter a valid email";
-                              // }
-
+                              if (!GetUtils.isEmail(value)) {
+                                return "Enter a valid email";
+                              }
                               return null;
                             },
                           ),
-                          const SizedBox(
-                            height: 34,
-                          ),
+                          const SizedBox(height: 34),
                           Obx(
                                 () => CustomTextField(
                               labelText: "Password",
@@ -90,46 +74,22 @@ class LoginScreen extends StatelessWidget {
                                 if (value!.isEmpty) {
                                   return "This field is required";
                                 }
-
                                 return null;
                               },
                             ),
                           ),
-                          const SizedBox(
-                            height: 12,
-                          ),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     ),
 
-                    // Align(
-                    //   alignment: Alignment.centerRight,
-                    //   child: GestureDetector(
-                    //     onTap: () {
-                    //       // Get.toNamed("/forgot-password");
-                    //     },
-                    //     child: const Text(
-                    //       "Forgot Password?",
-                    //       style: TextStyle(
-                    //         fontFamily: "JosefinSans",
-                    //         fontSize: bodyContentSize,
-                    //         color: Colors.black,
-                    //         fontWeight: FontWeight.w600,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-
-                    const SizedBox(
-                      height: 40,
-                    ),
+                    const SizedBox(height: 40),
 
                     Obx(
                           () => CustomButton(
                         onPressed: () {
                           FocusScope.of(context).unfocus();
-                          Get.to(HomeScreen());
-                          // controller.login();
+                          controller.login(); // Call login method
                         },
                         buttonType: ButtonTypes.primary,
                         width: Get.size.width * 0.6,

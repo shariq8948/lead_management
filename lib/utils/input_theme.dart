@@ -28,7 +28,7 @@ class MyInputTheme {
 
     // Borders
     enabledBorder: _buildBorder(
-      Colors.grey.shade600,
+      Colors.grey
     ),
     focusedBorder: _buildBorder(
       primary1Color,

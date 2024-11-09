@@ -45,7 +45,7 @@ class CustomSelect extends StatelessWidget {
     this.onTapField,
     this.onTapOutsideField,
     this.suggestionFn,
-    this.filledColor = bgColor,
+    this.filledColor = Colors.white,
     this.labelColor = Colors.black,
     this.validator,
     this.withShadow = true,

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 class CustomTaskCard extends StatelessWidget {
   final String taskType;
   final String date;
   final String assigneeName;
-  final bool isChecked;
+  final RxBool isChecked; // Change to RxBool
   final VoidCallback onNameTap;
   final ValueChanged<bool?> onCheckboxChanged;
 
@@ -33,20 +35,15 @@ class CustomTaskCard extends StatelessWidget {
             ),
           ),
           SizedBox(width: 24),
-
-          // Date Text
           Text(
             date,
             style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
           SizedBox(width: 24),
-
-          // Task Type (Fixed Position) and Assignee Name
           Row(
             children: [
-              // Fixed width for Task Type
               SizedBox(
-                width: 80, // Adjust width as needed
+                width: 80,
                 child: Text(
                   taskType,
                   style: TextStyle(
@@ -57,8 +54,6 @@ class CustomTaskCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 16),
-
-              // Assignee Name
               GestureDetector(
                 onTap: onNameTap,
                 child: Text(
@@ -72,13 +67,11 @@ class CustomTaskCard extends StatelessWidget {
               ),
             ],
           ),
-
-          // Checkbox for task completion
           Spacer(),
-          Checkbox(
-            value: isChecked,
+          Obx(() => Checkbox( // Wrap Checkbox in Obx
+            value: isChecked.value,
             onChanged: onCheckboxChanged,
-          ),
+          )),
         ],
       ),
     );

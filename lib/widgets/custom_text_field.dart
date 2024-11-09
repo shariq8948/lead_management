@@ -11,9 +11,19 @@ class CustomTextField extends StatelessWidget {
     this.enabled = true,
     this.maxLines = 1,
     this.validator,
+    this.onTap,
+    this.onChanged,
+    this.onSubmitted,
+    this.textInputAction = TextInputAction.done,
     this.passwordField = false,
     this.showPass = false,
     this.showPassFn,
+    this.icon,
+    this.labelStyle,
+    this.hintStyle,
+    this.contentPadding,
+    this.fillColor,
+    this.borderRadius = 12.0,
   });
 
   final String labelText;
@@ -24,9 +34,19 @@ class CustomTextField extends StatelessWidget {
   final bool enabled;
   final int maxLines;
   final FormFieldValidator<String>? validator;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final TextInputAction textInputAction;
   final bool passwordField;
   final bool showPass;
   final Function? showPassFn;
+  final Icon? icon;
+  final TextStyle? labelStyle;
+  final TextStyle? hintStyle;
+  final EdgeInsetsGeometry? contentPadding;
+  final Color? fillColor;
+  final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -35,32 +55,45 @@ class CustomTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: passwordField && secure && !showPass,
       enabled: enabled,
+      maxLines: maxLines,
+      textInputAction: textInputAction,
+      validator: validator,
+      onTap: onTap,
+      onChanged: onChanged,
+      onFieldSubmitted: onSubmitted,
+      style: const TextStyle(
+        fontSize: 18,
+        fontFamily: "JosefinSans",
+      ),
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey.shade500),
-        labelStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey.shade700,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        hintStyle: hintStyle ?? TextStyle(color: Colors.grey.shade500),
+        labelStyle: labelStyle ??
+            TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+        contentPadding:
+        contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         filled: true,
-        fillColor: Colors.grey.shade100,
+        fillColor: fillColor ?? Colors.grey.shade100,
+        prefixIcon: icon,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(borderRadius),
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(borderRadius),
           borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(borderRadius),
           borderSide: BorderSide(color: Colors.red.shade300, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(borderRadius),
           borderSide: BorderSide(color: Colors.red.shade300, width: 2),
         ),
         suffixIcon: passwordField
@@ -71,17 +104,13 @@ class CustomTextField extends StatelessWidget {
             }
           },
           child: Icon(
-            showPass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            showPass
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: Colors.grey.shade600,
           ),
         )
             : null,
-      ),
-      maxLines: maxLines,
-      validator: validator,
-      style: const TextStyle(
-        fontSize: 18,
-        fontFamily: "JosefinSans",
       ),
     );
   }

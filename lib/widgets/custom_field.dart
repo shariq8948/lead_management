@@ -73,7 +73,7 @@ class CustomField extends StatelessWidget {
       shadow: BoxShadow(
         color: const Color(0xFF707070).withOpacity(0.25),
         spreadRadius: 0,
-        blurRadius: 10,
+        blurRadius: 5,
         offset: const Offset(0, 0),
       ),
     );
@@ -236,12 +236,7 @@ class CustomField extends StatelessWidget {
               ),
             )
                 : null,
-            // suffixIconConstraints: const BoxConstraints(
-            //   maxHeight: 14,
-            //   minHeight: 14,
-            //   maxWidth: 14,
-            //   minWidth: 14,
-            // ),
+
           ),
         ),
         passwordField == true

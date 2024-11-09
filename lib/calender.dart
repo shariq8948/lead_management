@@ -44,7 +44,6 @@ class _CustomCalendarPageState extends State<CustomCalendarPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('My Task'),
-        backgroundColor: Colors.teal,
       ),
       body: Container(
         color: Colors.white,

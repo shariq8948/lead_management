@@ -1,152 +1,99 @@
 import 'package:flutter/material.dart';
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
-  bool _isExpanded = false;
-  late AnimationController _animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-  }
-
-  void _toggleMenu() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-      if (_isExpanded) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
-    });
-  }
-
+class CustomBottomAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text(
-          "Main Content",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        // Custom shape as background
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: CustomPaint(
+            size: Size(MediaQuery.of(context).size.width, 80),
+            painter: BottomAppBarPainter(),
+          ),
         ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Expandable buttons
-          if (_isExpanded) ...[
-            _buildExpandableButtonWithLabel(Icons.star, "Star", () {
-              print('Star button pressed');
-            }),
-            const SizedBox(height: 10),
-            _buildExpandableButtonWithLabel(Icons.task, "Task", () {
-              print('Task button pressed');
-            }),
-            const SizedBox(height: 10),
-            _buildExpandableButtonWithLabel(Icons.person, "Person", () {
-              print('Person button pressed');
-            }),
-            const SizedBox(height: 10),
-            _buildExpandableButtonWithLabel(Icons.receipt, "Receipt", () {
-              print('Receipt button pressed');
-            }),
-            const SizedBox(height: 10),
-          ],
-          // Main FAB
-          FloatingActionButton(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            onPressed: _toggleMenu,
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 3, color: Colors.teal),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: AnimatedIcon(
-              icon: AnimatedIcons.menu_close,
-              progress: _animationController,
-              color: Colors.teal,
+        // Bottom app bar content with icons
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: BottomAppBar(
+            color: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.home, color: Colors.black, size: 30),
+                  onPressed: () {},
+                ),
+                SizedBox(width: 30), // Space for the FAB
+                IconButton(
+                  icon: Icon(Icons.search, color: Colors.black, size: 30),
+                  onPressed: () {},
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: NavBar(
-        pageIndex: 0,
-        onTap: (index) {
-          print("Navigated to tab: $index");
-        },
-      ),
-    );
-  }
-
-  Widget _buildExpandableButtonWithLabel(IconData icon, String label, VoidCallback onPressed) {
-    return FloatingActionButton(
-      mini: true,
-      onPressed: onPressed,
-      backgroundColor: Colors.teal,
-      child: Icon(icon, color: Colors.white),
+        ),
+        // Center-aligned Floating Action Button
+        // Positioned(
+        //   bottom: 35,
+        //   child: FloatingActionButton(
+        //     onPressed: () {},
+        //     backgroundColor: Colors.teal,
+        //     child: Icon(Icons.add),
+        //   ),
+        // ),
+      ],
     );
   }
 }
 
-class NavBar extends StatelessWidget {
-  final int pageIndex;
-  final Function(int) onTap;
-
-  const NavBar({
-    super.key,
-    required this.pageIndex,
-    required this.onTap,
-  });
-
+class BottomAppBarPainter extends CustomPainter {
   @override
-  Widget build(BuildContext context) {
-    return BottomAppBar(
-      color: Colors.transparent,
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
-      child: Container(
-        height: 60,
-        color:Colors.black,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            navItem(
-              icon: Icons.home_outlined,
-              selected: pageIndex == 0,
-              onTap: () => onTap(0),
-            ),
-            const SizedBox(width: 80), // Space for the FAB
-            navItem(
-              icon: Icons.person_outline,
-              selected: pageIndex == 3,
-              onTap: () => onTap(3),
-            ),
-          ],
-        ),
-      ),
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Color(0xFFE1FFED);
+
+    final path = Path();
+    // Start from the left side
+    path.moveTo(0, 20);
+    path.lineTo(size.width * 0.2, 20);
+
+    // Curve up to create the left side of the FAB notch
+    path.quadraticBezierTo(
+        size.width * 0.1, 20,
+        size.width * 0.35, 0
     );
+
+    // Top of the FAB notch
+    path.arcToPoint(
+      Offset(size.width * 0.65, 0),
+      radius: Radius.circular(10),
+      clockwise: false,
+    );
+
+    // Right side of the FAB notch
+    path.quadraticBezierTo(
+      size.width * 0.8, 20,
+      size.width * 0.8, 20,
+    );
+
+    // Continue to the right side
+    path.lineTo(size.width, 20);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
   }
 
-  Widget navItem({required IconData icon, required bool selected, required VoidCallback onTap}) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Icon(
-          icon,
-          color: selected ? Colors.white : Colors.white.withOpacity(0.4),
-        ),
-      ),
-    );
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
   }
 }
