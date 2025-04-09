@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leads/contacts/contactsController.dart';
-import 'package:leads/create_lead/create_lead_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/models/customer_model.dart';
+import '../leads/create_lead/create_lead_page.dart';
 import '../widgets/custom_date_picker.dart';
 import '../widgets/custom_field.dart';
+import '../widgets/custom_loader.dart';
 import '../widgets/custom_select.dart';
 
 class Detailspage extends StatefulWidget {
@@ -24,7 +25,9 @@ class _DetailspageState extends State<Detailspage> {
   void initState() {
     super.initState();
     id = Get.arguments; // Get the ID passed as arguments
-    controller.fetchDetails(id); // Fetch customer details
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchDetails(id); // Fetch customer details
+    });
   }
 
   @override
@@ -49,7 +52,7 @@ class _DetailspageState extends State<Detailspage> {
         child: Obx(() {
           // Check if details are still loading
           if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CustomLoader());
           }
           // Check if no data is fetched
           if (controller.details.isEmpty) {
@@ -112,7 +115,7 @@ class _DetailspageState extends State<Detailspage> {
                     Text("Mobile: ${detail.mobile ?? "99999 99999"}"),
                     const SizedBox(height: 4),
                     Text(
-                      "Address: ${detail.address ?? "abc, Goregaon East, Mumbai"}",
+                      "Address: ${detail.address ?? ""}",
                     ),
                   ],
                 ),
@@ -224,22 +227,24 @@ class _DetailspageState extends State<Detailspage> {
                       } else if (action['label'] == "Call") {
                         _launchPhone(controller.details[0].mobile);
                       } else if (action['label'] == "Leads") {
-                        Get.to(CreateLeadPage());
-                      } else if (action['label'] == "Meeting") {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return MeetingDialog(); // Wrap the dialog here
-                          },
-                        );
-                      } else if (action['label'] == "Follow up") {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return FollowUpDialog(); // Wrap the dialog here
-                          },
-                        );
+                        Get.toNamed('/create-lead',
+                            arguments: {'isEdit': false});
                       }
+                      // } else if (action['label'] == "Meeting") {
+                      //   showDialog(
+                      //     context: context,
+                      //     builder: (BuildContext context) {
+                      //       return MeetingDialog(); // Wrap the dialog here
+                      //     },
+                      //   );
+                      // } else if (action['label'] == "Follow up") {
+                      //   showDialog(
+                      //     context: context,
+                      //     builder: (BuildContext context) {
+                      //       return FollowUpDialog(); // Wrap the dialog here
+                      //     },
+                      //   );
+                      // }
                     },
                     child: Icon(
                       Icons.add_box_outlined,
@@ -302,400 +307,400 @@ class _DetailspageState extends State<Detailspage> {
   }
 }
 
-class FollowUpDialog extends StatelessWidget {
-  final ContactController controller = Get.put(ContactController());
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(top: Get.size.height * .2),
-      child: Container(
-        decoration: BoxDecoration(),
-        child: GestureDetector(
-          onTap: () => FocusScope.of(context)
-              .unfocus(), // Dismiss keyboard on tap outside
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context)
-                        .viewInsets
-                        .bottom, // Adjust for the keyboard
-                  ),
-                  child: Container(
-                    child: Dialog(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Center(
-                              child: Text(
-                                "Follow Up",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 26),
-                            CustomField(
-                              withShadow: true,
-                              labelText: "Date",
-                              hintText: "Select date",
-                              inputAction: TextInputAction.done,
-                              inputType: TextInputType.datetime,
-                              showLabel: false,
-                              bgColor: Colors.white,
-                              enabled: true,
-                              readOnly: true,
-                              editingController: controller.DateCtlr,
-                              onFieldTap: () {
-                                Get.bottomSheet(
-                                  CustomDatePicker(
-                                    pastAllow: true,
-                                    confirmHandler: (date) async {
-                                      controller.DateCtlr.text = date ?? "";
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            Obx(
-                              () => CustomSelect(
-                                label: "Assign to",
-                                withShadow: false,
-                                withIcon: true,
-                                customIcon: Icon(
-                                  Icons.supervised_user_circle_outlined,
-                                  size: 28,
-                                ),
-                                placeholder: "Assign To",
-                                mainList: controller.leadAssignToList
-                                    .map(
-                                      (element) => CustomSelectItem(
-                                        id: element.id ?? "",
-                                        // Extract the productId as id
-                                        value: element.name ??
-                                            "", // Extract the productName as value
-                                      ),
-                                    )
-                                    .toList(),
-                                onSelect: (val) async {
-                                  controller.leadAssignToController.text =
-                                      val.id;
-                                  controller.showLeadAssignToController.text =
-                                      val.value;
-                                },
-                                textEditCtlr:
-                                    controller.showLeadAssignToController,
-                                showLabel: false,
-                                onTapField: () {
-                                  controller.leadAssignToController.clear();
-                                  controller.showLeadAssignToController.clear();
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            CustomField(
-                              withShadow: true,
-                              labelText: "Reminder",
-                              hintText: "Set reminder",
-                              inputAction: TextInputAction.done,
-                              inputType: TextInputType.text,
-                              showLabel: false,
-                              bgColor: Colors.white,
-                              enabled: true,
-                              readOnly: true,
-                              editingController: controller
-                                  .ReminderCtlr, // Add a new controller for reminder
-                              onFieldTap: () {
-                                // Show a Time Picker when the field is tapped
-                                showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay.now(),
-                                ).then((pickedTime) {
-                                  if (pickedTime != null) {
-                                    // Format the selected time into hours and minutes
-                                    final formattedTime =
-                                        "${pickedTime.hour} hours and ${pickedTime.minute} minutes";
-                                    controller.ReminderCtlr.text =
-                                        formattedTime;
-                                  }
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            CustomField(
-                              editingController: controller.remarkcontroller,
-                              hintText: "Enter Remark",
-                              labelText: "Remark",
-                              inputType: TextInputType.text,
-                              inputAction: TextInputAction.next,
-                              minLines: 3,
-                            ),
-                            const SizedBox(height: 32),
-                            Center(
-                              child: SizedBox(
-                                height: Get.size.height * .05,
-                                width: Get.size.width *
-                                    .7, // Adjust the width as needed
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    print("Date: ${controller.DateCtlr}");
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    "Save",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
+// class FollowUpDialog extends StatelessWidget {
+//   final ContactController controller = Get.put(ContactController());
+//   @override
+//   Widget build(BuildContext context) {
+//     return Padding(
+//       padding: EdgeInsets.only(top: Get.size.height * .2),
+//       child: Container(
+//         decoration: BoxDecoration(),
+//         child: GestureDetector(
+//           onTap: () => FocusScope.of(context)
+//               .unfocus(), // Dismiss keyboard on tap outside
+//           child: LayoutBuilder(
+//             builder: (context, constraints) {
+//               return SingleChildScrollView(
+//                 child: Padding(
+//                   padding: EdgeInsets.only(
+//                     bottom: MediaQuery.of(context)
+//                         .viewInsets
+//                         .bottom, // Adjust for the keyboard
+//                   ),
+//                   child: Container(
+//                     child: Dialog(
+//                       backgroundColor: Colors.white,
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(12),
+//                       ),
+//                       child: Padding(
+//                         padding: const EdgeInsets.all(16.0),
+//                         child: Column(
+//                           mainAxisSize: MainAxisSize.min,
+//                           crossAxisAlignment: CrossAxisAlignment.start,
+//                           children: [
+//                             Center(
+//                               child: Text(
+//                                 "Follow Up",
+//                                 style: TextStyle(
+//                                   fontWeight: FontWeight.bold,
+//                                   fontSize: 18,
+//                                 ),
+//                               ),
+//                             ),
+//                             const SizedBox(height: 26),
+//                             CustomField(
+//                               withShadow: true,
+//                               labelText: "Date",
+//                               hintText: "Select date",
+//                               inputAction: TextInputAction.done,
+//                               inputType: TextInputType.datetime,
+//                               showLabel: false,
+//                               bgColor: Colors.white,
+//                               enabled: true,
+//                               readOnly: true,
+//                               editingController: controller.DateCtlr,
+//                               onFieldTap: () {
+//                                 Get.bottomSheet(
+//                                   CustomDatePicker(
+//                                     pastAllow: true,
+//                                     confirmHandler: (date) async {
+//                                       controller.DateCtlr.text = date ?? "";
+//                                     },
+//                                   ),
+//                                 );
+//                               },
+//                             ),
+//                             const SizedBox(height: 16),
+//                             Obx(
+//                               () => CustomSelect(
+//                                 label: "Assign to",
+//                                 withShadow: false,
+//                                 withIcon: true,
+//                                 customIcon: Icon(
+//                                   Icons.supervised_user_circle_outlined,
+//                                   size: 28,
+//                                 ),
+//                                 placeholder: "Assign To",
+//                                 mainList: controller.leadAssignToList
+//                                     .map(
+//                                       (element) => CustomSelectItem(
+//                                         id: element.id ?? "",
+//                                         // Extract the productId as id
+//                                         value: element.name ??
+//                                             "", // Extract the productName as value
+//                                       ),
+//                                     )
+//                                     .toList(),
+//                                 onSelect: (val) async {
+//                                   controller.leadAssignToController.text =
+//                                       val.id;
+//                                   controller.showLeadAssignToController.text =
+//                                       val.value;
+//                                 },
+//                                 textEditCtlr:
+//                                     controller.showLeadAssignToController,
+//                                 showLabel: false,
+//                                 onTapField: () {
+//                                   controller.leadAssignToController.clear();
+//                                   controller.showLeadAssignToController.clear();
+//                                 },
+//                               ),
+//                             ),
+//                             const SizedBox(height: 16),
+//                             CustomField(
+//                               withShadow: true,
+//                               labelText: "Reminder",
+//                               hintText: "Set reminder",
+//                               inputAction: TextInputAction.done,
+//                               inputType: TextInputType.text,
+//                               showLabel: false,
+//                               bgColor: Colors.white,
+//                               enabled: true,
+//                               readOnly: true,
+//                               editingController: controller
+//                                   .ReminderCtlr, // Add a new controller for reminder
+//                               onFieldTap: () {
+//                                 // Show a Time Picker when the field is tapped
+//                                 showTimePicker(
+//                                   context: context,
+//                                   initialTime: TimeOfDay.now(),
+//                                 ).then((pickedTime) {
+//                                   if (pickedTime != null) {
+//                                     // Format the selected time into hours and minutes
+//                                     final formattedTime =
+//                                         "${pickedTime.hour} hours and ${pickedTime.minute} minutes";
+//                                     controller.ReminderCtlr.text =
+//                                         formattedTime;
+//                                   }
+//                                 });
+//                               },
+//                             ),
+//                             const SizedBox(height: 16),
+//                             CustomField(
+//                               editingController: controller.remarkcontroller,
+//                               hintText: "Enter Remark",
+//                               labelText: "Remark",
+//                               inputType: TextInputType.text,
+//                               inputAction: TextInputAction.next,
+//                               minLines: 3,
+//                             ),
+//                             const SizedBox(height: 32),
+//                             Center(
+//                               child: SizedBox(
+//                                 height: Get.size.height * .05,
+//                                 width: Get.size.width *
+//                                     .7, // Adjust the width as needed
+//                                 child: ElevatedButton(
+//                                   onPressed: () {
+//                                     print("Date: ${controller.DateCtlr}");
+//                                   },
+//                                   style: ElevatedButton.styleFrom(
+//                                     backgroundColor: Colors.blue,
+//                                     shape: RoundedRectangleBorder(
+//                                       borderRadius: BorderRadius.circular(8),
+//                                     ),
+//                                   ),
+//                                   child: Text(
+//                                     "Save",
+//                                     style: TextStyle(color: Colors.white),
+//                                   ),
+//                                 ),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               );
+//             },
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
-class MeetingDialog extends StatelessWidget {
-  final ContactController controller = Get.put(ContactController());
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(),
-      child: GestureDetector(
-        onTap: () =>
-            FocusScope.of(context).unfocus(), // Dismiss keyboard on tap outside
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context)
-                      .viewInsets
-                      .bottom, // Adjust for the keyboard
-                ),
-                child: Container(
-                  child: Dialog(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Text(
-                              "Meeting",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                          CustomField(
-                            editingController: controller.meetingTitle,
-                            hintText: "Title",
-                            labelText: "title",
-                            inputType: TextInputType.text,
-                            inputAction: TextInputAction.next,
-                          ),
-                          const SizedBox(height: 26),
-                          CustomField(
-                            withShadow: true,
-                            labelText: "From",
-                            hintText: "From",
-                            inputAction: TextInputAction.done,
-                            inputType: TextInputType.datetime,
-                            showLabel: false,
-                            bgColor: Colors.white,
-                            enabled: true,
-                            readOnly: true,
-                            editingController: controller.mettingFromDateCtlr,
-                            onFieldTap: () {
-                              Get.bottomSheet(
-                                CustomDatePicker(
-                                  pastAllow: true,
-                                  confirmHandler: (date) async {
-                                    controller.mettingFromDateCtlr.text =
-                                        date ?? "";
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          CustomField(
-                            withShadow: true,
-                            labelText: "To",
-                            hintText: "To",
-                            inputAction: TextInputAction.done,
-                            inputType: TextInputType.datetime,
-                            showLabel: false,
-                            bgColor: Colors.white,
-                            enabled: true,
-                            readOnly: true,
-                            editingController: controller.mettingToDateCtlr,
-                            onFieldTap: () {
-                              Get.bottomSheet(
-                                CustomDatePicker(
-                                  pastAllow: true,
-                                  confirmHandler: (date) async {
-                                    controller.mettingToDateCtlr.text =
-                                        date ?? "";
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          Obx(
-                            () => CustomSelect(
-                              label: "Assign to",
-                              withShadow: false,
-                              withIcon: true,
-                              customIcon: Icon(
-                                Icons.supervised_user_circle_outlined,
-                                size: 28,
-                              ),
-                              placeholder: "Assign To",
-                              mainList: controller.leadAssignToList
-                                  .map(
-                                    (element) => CustomSelectItem(
-                                      id: element.id ?? "",
-                                      // Extract the productId as id
-                                      value: element.name ??
-                                          "", // Extract the productName as value
-                                    ),
-                                  )
-                                  .toList(),
-                              onSelect: (val) async {
-                                controller.leadAssignToController.text = val.id;
-                                controller.showLeadAssignToController.text =
-                                    val.value;
-                              },
-                              textEditCtlr:
-                                  controller.showLeadAssignToController,
-                              showLabel: false,
-                              onTapField: () {
-                                controller.leadAssignToController.clear();
-                                controller.showLeadAssignToController.clear();
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          CustomField(
-                            withShadow: true,
-                            labelText: "Reminder",
-                            hintText: "Set reminder",
-                            inputAction: TextInputAction.done,
-                            inputType: TextInputType.text,
-                            showLabel: false,
-                            bgColor: Colors.white,
-                            enabled: true,
-                            readOnly: true,
-                            editingController: controller
-                                .mettingReminderCtlr, // Add a new controller for reminder
-                            onFieldTap: () {
-                              // Show a Time Picker when the field is tapped
-                              showTimePicker(
-                                context: context,
-                                initialTime: TimeOfDay.now(),
-                              ).then((pickedTime) {
-                                if (pickedTime != null) {
-                                  // Format the selected time into hours and minutes
-                                  final formattedTime =
-                                      "${pickedTime.hour} hours and ${pickedTime.minute} minutes";
-                                  controller.mettingReminderCtlr.text =
-                                      formattedTime;
-                                }
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          CustomField(
-                            editingController: controller.mettingLocation,
-                            hintText: "Location",
-                            labelText: "Location",
-                            inputType: TextInputType.text,
-                            inputAction: TextInputAction.next,
-                            minLines: 3,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomField(
-                            editingController: controller.mettingdesc,
-                            hintText: "Description",
-                            labelText: "Description",
-                            inputType: TextInputType.text,
-                            inputAction: TextInputAction.next,
-                            minLines: 3,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomField(
-                            editingController: controller.meetingod,
-                            hintText: "Outcome Description",
-                            labelText: "Outcome Description",
-                            inputType: TextInputType.text,
-                            inputAction: TextInputAction.next,
-                            minLines: 3,
-                          ),
-                          const SizedBox(height: 32),
-                          Center(
-                            child: SizedBox(
-                              height: Get.size.height * .05,
-                              width: Get.size.width *
-                                  .7, // Adjust the width as needed
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  print("Date: ${controller.DateCtlr}");
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: Text(
-                                  "Save",
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
+// class MeetingDialog extends StatelessWidget {
+//   final ContactController controller = Get.put(ContactController());
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       decoration: BoxDecoration(),
+//       child: GestureDetector(
+//         onTap: () =>
+//             FocusScope.of(context).unfocus(), // Dismiss keyboard on tap outside
+//         child: LayoutBuilder(
+//           builder: (context, constraints) {
+//             return SingleChildScrollView(
+//               child: Padding(
+//                 padding: EdgeInsets.only(
+//                   bottom: MediaQuery.of(context)
+//                       .viewInsets
+//                       .bottom, // Adjust for the keyboard
+//                 ),
+//                 child: Container(
+//                   child: Dialog(
+//                     backgroundColor: Colors.white,
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(12),
+//                     ),
+//                     child: Padding(
+//                       padding: const EdgeInsets.all(16.0),
+//                       child: Column(
+//                         mainAxisSize: MainAxisSize.min,
+//                         crossAxisAlignment: CrossAxisAlignment.start,
+//                         children: [
+//                           Center(
+//                             child: Text(
+//                               "Meeting",
+//                               style: TextStyle(
+//                                 fontWeight: FontWeight.bold,
+//                                 fontSize: 18,
+//                               ),
+//                             ),
+//                           ),
+//                           CustomField(
+//                             editingController: controller.meetingTitle,
+//                             hintText: "Title",
+//                             labelText: "title",
+//                             inputType: TextInputType.text,
+//                             inputAction: TextInputAction.next,
+//                           ),
+//                           const SizedBox(height: 26),
+//                           CustomField(
+//                             withShadow: true,
+//                             labelText: "From",
+//                             hintText: "From",
+//                             inputAction: TextInputAction.done,
+//                             inputType: TextInputType.datetime,
+//                             showLabel: false,
+//                             bgColor: Colors.white,
+//                             enabled: true,
+//                             readOnly: true,
+//                             editingController: controller.mettingFromDateCtlr,
+//                             onFieldTap: () {
+//                               Get.bottomSheet(
+//                                 CustomDatePicker(
+//                                   pastAllow: true,
+//                                   confirmHandler: (date) async {
+//                                     controller.mettingFromDateCtlr.text =
+//                                         date ?? "";
+//                                   },
+//                                 ),
+//                               );
+//                             },
+//                           ),
+//                           const SizedBox(height: 16),
+//                           CustomField(
+//                             withShadow: true,
+//                             labelText: "To",
+//                             hintText: "To",
+//                             inputAction: TextInputAction.done,
+//                             inputType: TextInputType.datetime,
+//                             showLabel: false,
+//                             bgColor: Colors.white,
+//                             enabled: true,
+//                             readOnly: true,
+//                             editingController: controller.mettingToDateCtlr,
+//                             onFieldTap: () {
+//                               Get.bottomSheet(
+//                                 CustomDatePicker(
+//                                   pastAllow: true,
+//                                   confirmHandler: (date) async {
+//                                     controller.mettingToDateCtlr.text =
+//                                         date ?? "";
+//                                   },
+//                                 ),
+//                               );
+//                             },
+//                           ),
+//                           const SizedBox(height: 16),
+//                           Obx(
+//                             () => CustomSelect(
+//                               label: "Assign to",
+//                               withShadow: false,
+//                               withIcon: true,
+//                               customIcon: Icon(
+//                                 Icons.supervised_user_circle_outlined,
+//                                 size: 28,
+//                               ),
+//                               placeholder: "Assign To",
+//                               mainList: controller.leadAssignToList
+//                                   .map(
+//                                     (element) => CustomSelectItem(
+//                                       id: element.id ?? "",
+//                                       // Extract the productId as id
+//                                       value: element.name ??
+//                                           "", // Extract the productName as value
+//                                     ),
+//                                   )
+//                                   .toList(),
+//                               onSelect: (val) async {
+//                                 controller.leadAssignToController.text = val.id;
+//                                 controller.showLeadAssignToController.text =
+//                                     val.value;
+//                               },
+//                               textEditCtlr:
+//                                   controller.showLeadAssignToController,
+//                               showLabel: false,
+//                               onTapField: () {
+//                                 controller.leadAssignToController.clear();
+//                                 controller.showLeadAssignToController.clear();
+//                               },
+//                             ),
+//                           ),
+//                           const SizedBox(height: 16),
+//                           CustomField(
+//                             withShadow: true,
+//                             labelText: "Reminder",
+//                             hintText: "Set reminder",
+//                             inputAction: TextInputAction.done,
+//                             inputType: TextInputType.text,
+//                             showLabel: false,
+//                             bgColor: Colors.white,
+//                             enabled: true,
+//                             readOnly: true,
+//                             editingController: controller
+//                                 .mettingReminderCtlr, // Add a new controller for reminder
+//                             onFieldTap: () {
+//                               // Show a Time Picker when the field is tapped
+//                               showTimePicker(
+//                                 context: context,
+//                                 initialTime: TimeOfDay.now(),
+//                               ).then((pickedTime) {
+//                                 if (pickedTime != null) {
+//                                   // Format the selected time into hours and minutes
+//                                   final formattedTime =
+//                                       "${pickedTime.hour} hours and ${pickedTime.minute} minutes";
+//                                   controller.mettingReminderCtlr.text =
+//                                       formattedTime;
+//                                 }
+//                               });
+//                             },
+//                           ),
+//                           const SizedBox(height: 16),
+//                           CustomField(
+//                             editingController: controller.mettingLocation,
+//                             hintText: "Location",
+//                             labelText: "Location",
+//                             inputType: TextInputType.text,
+//                             inputAction: TextInputAction.next,
+//                             minLines: 3,
+//                           ),
+//                           const SizedBox(height: 16),
+//                           CustomField(
+//                             editingController: controller.mettingdesc,
+//                             hintText: "Description",
+//                             labelText: "Description",
+//                             inputType: TextInputType.text,
+//                             inputAction: TextInputAction.next,
+//                             minLines: 3,
+//                           ),
+//                           const SizedBox(height: 16),
+//                           CustomField(
+//                             editingController: controller.meetingod,
+//                             hintText: "Outcome Description",
+//                             labelText: "Outcome Description",
+//                             inputType: TextInputType.text,
+//                             inputAction: TextInputAction.next,
+//                             minLines: 3,
+//                           ),
+//                           const SizedBox(height: 32),
+//                           Center(
+//                             child: SizedBox(
+//                               height: Get.size.height * .05,
+//                               width: Get.size.width *
+//                                   .7, // Adjust the width as needed
+//                               child: ElevatedButton(
+//                                 onPressed: () {
+//                                   print("Date: ${controller.DateCtlr}");
+//                                 },
+//                                 style: ElevatedButton.styleFrom(
+//                                   backgroundColor: Colors.blue,
+//                                   shape: RoundedRectangleBorder(
+//                                     borderRadius: BorderRadius.circular(8),
+//                                   ),
+//                                 ),
+//                                 child: Text(
+//                                   "Save",
+//                                   style: TextStyle(color: Colors.white),
+//                                 ),
+//                               ),
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             );
+//           },
+//         ),
+//       ),
+//     );
+//   }
+// }

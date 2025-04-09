@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart'; // Required for TextEditingController
 import 'package:get/get.dart';
 
-class Products {
+class Products1 {
   final String id;
   final String? sN;
   final String iname;
@@ -22,7 +22,10 @@ class Products {
   final String prate;
   final String rate1;
   final String netrate;
+  final String? mrp;
   final String sname;
+  final String? imageUrl;
+  final String? Imagepath;
   final String? approvalstatus;
   final String? approvedon;
   final String? isapproved;
@@ -36,9 +39,12 @@ class Products {
   TextEditingController qtyController;
   TextEditingController discountController;
 
-  Products({
+  Products1({
     required this.id,
     this.sN,
+    this.imageUrl,
+    this.mrp,
+    this.Imagepath,
     required this.iname,
     this.icode,
     this.autocode,
@@ -69,14 +75,18 @@ class Products {
   })  : isSelected = RxBool(isSelected),
         qty = RxInt(qty),
         discount = RxDouble(discount),
-  // Initialize controllers with default values
+        // Initialize controllers with default values
         qtyController = TextEditingController(text: qty.toString()),
         discountController = TextEditingController(text: discount.toString());
 
-  factory Products.fromJson(Map<String, dynamic> json) {
-    return Products(
+  factory Products1.fromJson(Map<String, dynamic> json) {
+    return Products1(
       id: json['Id'] ?? '',
       sN: json['SN'],
+      mrp: json['Mrp'],
+      imageUrl: json['Imageurl'],
+      Imagepath: json['Imagepath'],
+
       iname: json['Iname'] ?? '',
       icode: json['Icode'],
       autocode: json['Autocode'],
@@ -100,8 +110,10 @@ class Products {
       approvedon: json['Approvedon'],
       isapproved: json['Isapproved'],
       username: json['Username'] ?? '',
-      qty: int.tryParse(json['Qty']?.toString() ?? '1') ?? 1, // Safely parse qty
-      discount: double.tryParse(json['Discount']?.toString() ?? '0') ?? 0.0, // Safely parse discount
+      qty:
+          int.tryParse(json['Qty']?.toString() ?? '1') ?? 1, // Safely parse qty
+      discount: double.tryParse(json['Discount']?.toString() ?? '0') ??
+          0.0, // Safely parse discount
     );
   }
 
@@ -109,6 +121,9 @@ class Products {
     return {
       'Id': id,
       'SN': sN,
+      'Mrp': mrp,
+      'Imageurl': imageUrl,
+      'Imagepath': Imagepath,
       'Iname': iname,
       'Icode': icode,
       'Autocode': autocode,

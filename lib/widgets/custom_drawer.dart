@@ -2,20 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:leads/Authorization/expenses/expenseList.dart';
 import 'package:leads/Authorization/payements/payementListPage.dart';
-import 'package:leads/Campaign/campaignpage.dart';
-import 'package:leads/Customer_entry/customer_entry_page.dart';
+import 'package:leads/Masters/PayementMode/payement_mode_list.dart';
 import 'package:leads/More/expenses.dart';
+import 'package:leads/More/payementApproval.dart';
+import 'package:leads/auth/login/login_controller.dart';
+import 'package:leads/contactimport/importpage.dart';
 import 'package:leads/contacts/contactspage.dart';
-import 'package:leads/expenseEntry/expense_entry_page.dart';
-import 'package:leads/leadlist/lead_list_page.dart';
-import 'package:leads/neworder/ordernow.dart';
 
 import '../Authorization/pendingpayements/pendingList.dart';
-import '../QuotationEntry/quotation_entry_page.dart';
-import '../QuotationFollowUp/followuppage.dart';
-import '../shape.dart';
+import '../Masters/Target/monthlyTarget/target_list_page.dart';
+import '../Masters/Target/productTarget/product_target_list.dart';
+import '../Masters/category/category_list_page.dart';
+import '../Masters/customerList/customer_list_page.dart';
+import '../Masters/user/Users_List.dart';
+import '../Quotation/QuotationEntry/quotation_entry_page.dart';
+import '../Quotation/QuotationFollowUp/followuppage.dart';
+import '../Reports/reports_grid/reports_grid_page.dart';
+import '../attendance/attendance_page.dart';
+import '../chats/users/screen.dart';
+import '../help/help_page.dart';
+import '../lead_center/lead_center_page.dart';
+import '../leads/leadlist/lead_list_page.dart';
+import '../master-reports/constants/main_dashboard/views/main_dashboard.dart';
+import '../mytask/mytaskpage.dart';
+import '../profilePage/profile_page.dart';
+import '../utils/map_demo.dart';
+import '../utils/routes.dart';
 
 class CustomDrawer extends StatelessWidget {
+  final LoginController controller = Get.put(LoginController());
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -48,23 +63,12 @@ class CustomDrawer extends StatelessWidget {
               label: "Masters",
               duration: Duration(milliseconds: 800),
               children: [
-                ExpandableDrawerItem(
-                  icon: Icons.public,
-                  label: "Geographical",
-                  children: [
-                    DrawerSubItem(
-                        label: "Category Entry",
-                        onTap: () {},
-                        icon: Icons.category),
-                    DrawerSubItem(
-                        label: "Customer Entry",
-                        onTap: () {},
-                        icon: Icons.person_add),
-                  ],
-                ),
                 DrawerSubItem(
                     label: "Category Entry",
-                    onTap: () => _navigateToSubItem1(context),
+                    onTap: () {
+                      Get.to(() => CategoryListPage());
+                    },
+                    // onTap: () => Get.to(CategoryListPage()),
                     icon: Icons.list),
                 DrawerSubItem(
                     label: "Customer Entry",
@@ -72,7 +76,7 @@ class CustomDrawer extends StatelessWidget {
                     icon: Icons.group_add),
                 DrawerSubItem(
                     label: "Payment Mode",
-                    onTap: () => _navigateToSubItem2(context),
+                    onTap: () => Get.to(PaymentModePage()),
                     icon: Icons.payment),
                 DrawerSubItem(
                     label: "Product Entry",
@@ -80,40 +84,16 @@ class CustomDrawer extends StatelessWidget {
                     icon: Icons.add_shopping_cart),
                 DrawerSubItem(
                     label: "Add User Type",
-                    onTap: () => _navigateToSubItem2(context),
+                    onTap: () => Get.to(UsersListPage()),
                     icon: Icons.person_add_alt),
                 DrawerSubItem(
-                    label: "Users",
-                    onTap: () => _navigateToSubItem2(context),
-                    icon: Icons.supervised_user_circle),
-                DrawerSubItem(
-                    label: "User Mapping",
-                    onTap: () => _navigateToSubItem2(context),
-                    icon: Icons.map),
-                DrawerSubItem(
-                    label: "Manager/Coordinator Mapping",
-                    onTap: () => _navigateToSubItem2(context),
-                    icon: Icons.admin_panel_settings),
-                DrawerSubItem(
                     label: "Monthly Target",
-                    onTap: () => _navigateToSubItem2(context),
+                    onTap: () => Get.to(TargetListPage()),
                     icon: Icons.tablet),
                 DrawerSubItem(
                     label: "Product Target",
-                    onTap: () => _navigateToSubItem2(context),
+                    onTap: () => Get.to(ProductTargetList()),
                     icon: Icons.local_offer),
-                DrawerSubItem(
-                    label: "Access Manager",
-                    onTap: () => _navigateToSubItem2(context),
-                    icon: Icons.lock),
-                DrawerSubItem(
-                    label: "Expense Type",
-                    onTap: () => _navigateToSubItem2(context),
-                    icon: Icons.money),
-                DrawerSubItem(
-                    label: "Incomplete Customers",
-                    onTap: () => _navigateToSubItem2(context),
-                    icon: Icons.error),
               ],
             ),
             _buildDivider(),
@@ -132,7 +112,7 @@ class CustomDrawer extends StatelessWidget {
                     icon: Icons.follow_the_signs),
                 DrawerSubItem(
                     label: "Order List",
-                    onTap: () => _navigateToSubItem2(context),
+                    onTap: () => Get.toNamed(Routes.ORDERS_LIST),
                     icon: Icons.list_alt),
                 DrawerSubItem(
                     label: "Order Now",
@@ -150,17 +130,17 @@ class CustomDrawer extends StatelessWidget {
             DrawerItem(
                 icon: Icons.assessment,
                 label: "Lead List",
-                onTap: () => Get.to(LeadListPage())),
+                onTap: () => Get.toNamed('/lead-list')),
             _buildDivider(),
             DrawerItem(
                 icon: Icons.campaign,
-                label: "Campaign",
+                label: "Attendance",
                 onTap: () => navigateToCampaign(context)),
             _buildDivider(),
             DrawerItem(
                 icon: Icons.task,
                 label: "My Task",
-                onTap: () => _navigateToAttendance(context)),
+                onTap: () => Get.to(CalendarPage())),
             _buildDivider(),
             ExpandableDrawerItem(
               icon: Icons.security,
@@ -199,7 +179,7 @@ class CustomDrawer extends StatelessWidget {
                     icon: Icons.attach_money),
                 DrawerSubItem(
                     label: "Payment Collection",
-                    onTap: () => _navigateToSubItemB(context),
+                    onTap: () => navigateTopayementCollection(context),
                     icon: Icons.payment),
               ],
             ),
@@ -207,75 +187,44 @@ class CustomDrawer extends StatelessWidget {
             DrawerItem(
                 icon: Icons.analytics,
                 label: "Lead Center",
-                onTap: () => _navigateToAttendance(context)),
-            _buildDivider(),
-            ExpandableDrawerItem(
-              icon: Icons.report,
-              label: "Reports",
-              children: [
-                ExpandableDrawerItem(
-                    label: 'Payment Reports',
-                    icon: Icons.money,
-                    children: [
-                      DrawerSubItem(
-                          label: "Sub-item A",
-                          onTap: () => _navigateToSubItemA(context),
-                          icon: Icons.description),
-                    ]),
-                _buildDivider(),
-                ExpandableDrawerItem(
-                    label: 'Expense Reports',
-                    icon: Icons.money_off,
-                    children: [
-                      DrawerSubItem(
-                          label: "Sub-item A",
-                          onTap: () => _navigateToSubItemA(context),
-                          icon: Icons.description),
-                    ]),
-                _buildDivider(),
-                ExpandableDrawerItem(
-                    label: 'Marketing Reports',
-                    icon: Icons.trending_up,
-                    children: [
-                      DrawerSubItem(
-                          label: "Sub-item A",
-                          onTap: () => _navigateToSubItemA(context),
-                          icon: Icons.description),
-                    ]),
-                _buildDivider(),
-                ExpandableDrawerItem(
-                    label: 'Order Reports',
-                    icon: Icons.receipt,
-                    children: [
-                      DrawerSubItem(
-                          label: "Sub-item A",
-                          onTap: () => _navigateToSubItemA(context),
-                          icon: Icons.description),
-                    ]),
-                _buildDivider(),
-                DrawerSubItem(
-                    label: "Daily Attendance",
-                    onTap: () => _navigateToSubItemA(context),
-                    icon: Icons.access_time),
-                DrawerSubItem(
-                    label: "Pipeline Report",
-                    onTap: () => _navigateToSubItemB(context),
-                    icon: Icons.timeline),
-                DrawerSubItem(
-                    label: "Performance Report",
-                    onTap: () => _navigateToSubItemB(context),
-                    icon: Icons.assessment),
-                DrawerSubItem(
-                    label: "Login History",
-                    onTap: () => _navigateToSubItemB(context),
-                    icon: Icons.history),
-              ],
-            ),
+                onTap: () => Get.to(() => LeadCenterPage())),
             _buildDivider(),
             DrawerItem(
                 icon: Icons.analytics,
-                label: "Lead Center",
-                onTap: () => _navigateToAttendance(context)),
+                label: "Maps",
+                onTap: () => Get.to(LiveMapScreen())),
+            _buildDivider(),
+
+            DrawerItem(
+                icon: Icons.analytics,
+                label: "Reports",
+                onTap: () => Get.to(ReportsDashboardScreen())),
+            _buildDivider(),
+
+            DrawerItem(
+                icon: Icons.analytics,
+                label: "Profile",
+                onTap: () => Get.to(ProfilePage())),
+            DrawerItem(
+                icon: Icons.login_outlined,
+                label: "Log Out",
+                onTap: () => controller.logout()),
+            DrawerItem(
+                icon: Icons.help_center_outlined,
+                label: "Help",
+                onTap: () => Get.to(HelpPage())),
+            DrawerItem(
+                icon: Icons.contact_mail_outlined,
+                label: "Import Contact",
+                onTap: () => Get.toNamed(Routes.CONTACT_IMPORT)),
+            DrawerItem(
+                icon: Icons.contact_mail_outlined,
+                label: "Import Excel",
+                onTap: () => Get.toNamed(Routes.EXCEL_IMPORT)),
+            DrawerItem(
+                icon: Icons.contact_mail_outlined,
+                label: "Chat",
+                onTap: () => Get.to(CustomersScreen())),
           ],
         ),
       ),
@@ -302,21 +251,18 @@ class CustomDrawer extends StatelessWidget {
     Get.to(ContactsPage());
   }
 
-  void _navigateToSubItem1(BuildContext context) {
-    Navigator.pop(context);
-    // Navigate to Sub-item 1
-  }
-
   void _navigateExpenseEntry() {
     Get.to(AddExpense());
   }
 
   void _navigatoCustomerEntry() {
-    Get.to(CustomerEntryForm());
+    Get.to(CustomerListPage());
   }
 
   void _navigatoProductEntry() {
-    Get.to(NotchedRectangleWidget());
+    Get.toNamed(
+      Routes.productList,
+    );
   }
 
   void _navigatoQuotationEntry() {
@@ -334,22 +280,27 @@ class CustomDrawer extends StatelessWidget {
   }
 
   void navigateToOrderNow(BuildContext context) {
-    Get.to(ItemListPageOrder());
+    Get.toNamed(Routes.PRODUCT_ORDERS);
+    // Navigate to Sub-item 2
+  }
+
+  void navigateTopayementCollection(BuildContext context) {
+    Get.to(Payementapproval());
     // Navigate to Sub-item 2
   }
 
   void navigateToCampaign(BuildContext context) {
-    Get.to(Campaignpage());
+    Get.to(AttendancePage());
     // Navigate to Sub-item 2
   }
 
   void navigateToExpenseAuthorization(BuildContext context) {
-    Get.to(ExpenselistPage());
+    Get.to(ExpenseListPage());
     // Navigate to Sub-item 2
   }
 
   void navigateToPayementAuthorization(BuildContext context) {
-    Get.to(MobileTableView());
+    Get.to(PaymentsView());
     // Navigate to Sub-item 2
   }
 

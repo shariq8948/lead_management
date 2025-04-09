@@ -1,0 +1,327 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:leads/utils/tags.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../Tasks/taskDeatails/task_details_page.dart';
+import '../auth/login/login_controller.dart';
+import '../data/api/api_client.dart';
+import '../google_service/google_calendar_helper.dart';
+import '../utils/routes.dart';
+import '../widgets/custom_snckbar.dart';
+import 'notification_db.dart';
+import 'notification_model.dart';
+
+Future<void> initializeStorage() async {
+  await GetStorage.init();
+}
+
+class NotificationController extends GetxController {
+  final notifications = <AppNotification>[].obs;
+  late String taskId;
+  final box = GetStorage();
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeFCM();
+    loadNotifications();
+  }
+
+  Future<void> loadNotifications() async {
+    try {
+      final notificationList =
+          await NotificationDatabaseHelper.getAllNotifications();
+      notifications.assignAll(notificationList);
+      print('✅ Notifications loaded successfully: ${notifications.length}');
+    } catch (e) {
+      print('❌ Error loading notifications: $e');
+    }
+  }
+
+  Future<void> deleteNotification(String id) async {
+    try {
+      await NotificationDatabaseHelper.deleteNotification(id);
+      await loadNotifications();
+      print('✅ Notification deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting notification: $e');
+      CustomSnack.show(
+        content: "Failed to delete notification",
+        snackType: SnackType.error,
+      );
+    }
+  }
+
+  void _initializeFCM() async {
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        String? token = await messaging.getToken();
+        print('📲 FCM Token: $token');
+        await box.write('fcm_token', token);
+
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+
+        await initializeStorage();
+        FirebaseMessaging.onBackgroundMessage(
+            _firebaseMessagingBackgroundHandler);
+
+        print('✅ FCM initialized successfully');
+      } else {
+        print('⚠️ Push Notification permissions denied');
+      }
+    } catch (e) {
+      print('❌ Error initializing FCM: $e');
+    }
+  }
+
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    print('📩 Foreground Notification Received: ${message.messageId}');
+    await _processNotification(message);
+  }
+
+  Future<void> _handleNotificationTap(RemoteMessage message) async {
+    print('👆 Notification Tapped: ${message.messageId}');
+    await _processNotification(message);
+    _handleNavigation(message);
+  }
+
+  static Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
+    print('📩 Background Notification Received: ${message.messageId}');
+
+    // Initialize storage first
+    await GetStorage.init();
+    final box = GetStorage();
+
+    if (message.notification != null) {
+      String title = message.notification?.title ?? '';
+
+      if (title.toLowerCase() == "logout") {
+        try {
+          await box.write(StorageTags.PENDING_LOGOUT, "yes");
+          print(box.read(
+            StorageTags.PENDING_LOGOUT,
+          ));
+          return;
+        } catch (e) {
+          print('❌ Background logout error: $e');
+
+          return;
+        }
+      }
+
+      // Handle regular notification...
+      try {
+        final notification = AppNotification(
+          id: message.messageId ?? DateTime.now().toString(),
+          title: title,
+          description: message.notification?.body ?? 'No Description',
+          timestamp: DateTime.now(),
+          navigationTarget: message.data['navigation_target'] ?? '',
+          navigationId: message.data['navigation_id'] ?? '',
+          imageUrl: message.data['image'] ?? '',
+        );
+
+        await NotificationDatabaseHelper.insertNotification(notification);
+        print('✅ Background notification saved: ${notification.title}');
+
+        if (await _checkUserLoggedIn() && message.data['isCalender'] == "yes") {
+          await _handleCalendarEvent(message);
+        }
+      } catch (e) {
+        print('❌ Error processing background notification: $e');
+      }
+    }
+  }
+
+  Future<void> _processNotification(RemoteMessage message) async {
+    if (message.notification != null) {
+      String title = message.notification!.title ?? '';
+
+      if (title.toLowerCase() == "logout") {
+        await _logoutUser();
+        return;
+      }
+
+      try {
+        final notification = AppNotification(
+          id: message.messageId ?? DateTime.now().toString(),
+          title: title,
+          description: message.notification!.body ?? 'No Description',
+          timestamp: DateTime.now(),
+          navigationTarget: message.data['navigation_target'] ?? '',
+          navigationId: message.data['navigation_id'] ?? '',
+          imageUrl: message.data['image'] ?? '',
+        );
+
+        await addNotification(notification);
+
+        if (await _checkUserLoggedIn() && message.data['isCalender'] == "yes") {
+          await _handleCalendarEvent(message);
+        }
+      } catch (e) {
+        print('❌ Error processing notification: $e');
+      }
+    }
+  }
+
+  static Future<void> _handleCalendarEvent(RemoteMessage message) async {
+    try {
+      final client = await getGoogleAuthClient();
+      if (client != null) {
+        final isScheduled = await ApiClient().scheduleTaskOnGoogleCalendar(
+          client: client,
+          title: message.data['title'] ?? 'Untitled Event',
+          location: message.data['location'] ?? '',
+          description: message.data['description'] ?? '',
+          startDate: message.data['start_date'] ?? '',
+          endDate: message.data['end_date'] ?? '',
+        );
+
+        print(isScheduled
+            ? '✅ Calendar event created successfully'
+            : '⚠️ Failed to create calendar event');
+      }
+    } catch (e) {
+      print('❌ Error creating calendar event: $e');
+    }
+  }
+
+  static Future<bool> _checkUserLoggedIn() async {
+    final box = GetStorage();
+    return box.read('loggedIn') == 'yes';
+  }
+
+  Future<void> _logoutUser() async {
+    try {
+      if (!Get.isRegistered<LoginController>()) {
+        await Get.put(LoginController());
+      }
+
+      final box = GetStorage();
+      final fcmToken = box.read('fcm_token');
+      await box.erase();
+      if (fcmToken != null) {
+        await box.write('fcm_token', fcmToken);
+      }
+
+      Get.offAllNamed('/login');
+
+      CustomSnack.show(
+        content: "You have been logged out",
+        snackType: SnackType.success,
+      );
+    } catch (e) {
+      print("❌ Logout error: $e");
+      CustomSnack.show(
+        content: "Failed to log out. Please try again.",
+        snackType: SnackType.error,
+      );
+    }
+  }
+
+  Future<bool> checkPendingLogout() async {
+    try {
+      await Future.delayed(
+          const Duration(milliseconds: 500)); // Ensure it loads properly
+      final isPendingLogout = box.read(StorageTags.PENDING_LOGOUT);
+
+      print('🔍 Checking pending logout: $isPendingLogout');
+
+      if (isPendingLogout == "yes") {
+        print("returnd yess");
+        // await _logoutUser();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Error checking pending logout: $e');
+      return false;
+    }
+  }
+
+  Future<void> addNotification(AppNotification notification) async {
+    try {
+      await NotificationDatabaseHelper.insertNotification(notification);
+      await loadNotifications();
+      print('✅ Notification added successfully');
+    } catch (e) {
+      print('❌ Error adding notification: $e');
+    }
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    try {
+      await NotificationDatabaseHelper.updateNotificationStatus(id, true);
+      await loadNotifications();
+      print('✅ Notification marked as read');
+    } catch (e) {
+      print('❌ Error marking notification as read: $e');
+    }
+  }
+
+  Future<void> clearNotifications() async {
+    try {
+      await NotificationDatabaseHelper.deleteAllNotifications();
+      await loadNotifications();
+      print('✅ All notifications cleared');
+    } catch (e) {
+      print('❌ Error clearing notifications: $e');
+      CustomSnack.show(
+        content: "Failed to clear notifications",
+        snackType: SnackType.error,
+      );
+    }
+  }
+
+  void _handleNavigation(RemoteMessage message) {
+    String navigationTarget = message.data['navigation_target'] ?? '';
+    String navigationId = message.data['navigation_id'] ?? '';
+    navigateToPage(navigationTarget, navigationId);
+  }
+
+  void navigateToPage(String navigationTarget, String? navigationId) {
+    try {
+      switch (navigationTarget) {
+        case "task_detail_page":
+          if (navigationId != null) {
+            print("📄 Navigating to task detail: $navigationId");
+            Get.to(() => TaskDetailPage(), arguments: {
+              "taskId": navigationId,
+            });
+          }
+          break;
+        case "lead_detail":
+          print("📄 Navigating to lead detail: $navigationId");
+          Get.toNamed(
+            Routes.leadDetail,
+            arguments: navigationId,
+          );
+          break;
+        case "home_page":
+          print("🏠 Navigating to home page");
+          Get.toNamed(Routes.home);
+          break;
+        default:
+          print("⚠️ Unknown navigation target: $navigationTarget");
+      }
+    } catch (e) {
+      print('❌ Navigation error: $e');
+      CustomSnack.show(
+        content: "Failed to navigate to the requested page",
+        snackType: SnackType.error,
+      );
+    }
+  }
+}

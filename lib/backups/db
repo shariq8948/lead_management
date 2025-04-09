@@ -1,0 +1,200 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'dart:convert';
+
+import '../../data/models/product.dart'; // Add this import for JSON handling
+
+class DatabaseHelper {
+  static final DatabaseHelper instance = DatabaseHelper._private();
+  static Database? _database;
+
+  // Use a unique database name for cart
+  static const String _databaseName = 'cart_database.db';
+  static const int _databaseVersion = 3;
+
+  DatabaseHelper._private();
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
+  }
+
+  Future<Database> _initDatabase() async {
+    final path = join(await getDatabasesPath(), _databaseName);
+    return await openDatabase(
+      path,
+      version: _databaseVersion,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE cart(
+            id TEXT PRIMARY KEY,
+            data TEXT,
+            gst_rate REAL,
+            gst_amount REAL,
+            timestamp INTEGER DEFAULT 0
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // Add GST-related columns if upgrading from version 1
+          await db
+              .execute('ALTER TABLE cart ADD COLUMN gst_rate REAL DEFAULT 0');
+          await db
+              .execute('ALTER TABLE cart ADD COLUMN gst_amount REAL DEFAULT 0');
+        }
+      },
+    );
+  }
+
+  Future<void> insertOrUpdateCartItem(Products product) async {
+    final db = await database;
+    try {
+      final results = await db.query('cart');
+      print(results);
+      // Calculate GST amount
+      double price = double.tryParse(product.rate1) ?? 0;
+      double itemTotal = price * product.qty.value;
+      double discountAmount = (itemTotal * product.discount.value) / 100;
+      double itemSubtotal = itemTotal - discountAmount;
+      double gstRate = double.tryParse(product.stax) ?? 0;
+      double gstAmount = (itemSubtotal * gstRate) / 100;
+
+      await db.insert(
+        'cart',
+        {
+          'id': product.id,
+          'data': jsonEncode(product.toJson()),
+          'gst_rate': gstRate,
+          'gst_amount': gstAmount,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print('Cart item inserted/updated: ${product.id}');
+    } catch (e) {
+      print('Error inserting cart item: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateQuantity(String productId, int newQty) async {
+    final db = await database;
+    try {
+      // Retrieve existing cart item
+      final List<Map<String, dynamic>> result = await db.query(
+        'cart',
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+
+      if (result.isNotEmpty) {
+        // Decode existing product data
+        Map<String, dynamic> productData = jsonDecode(result.first['data']);
+
+        // Update the quantity
+        productData['quantity'] = newQty;
+
+        // Save updated product back to database
+        await db.update(
+          'cart',
+          {'data': jsonEncode(productData)},
+          where: 'id = ?',
+          whereArgs: [productId],
+        );
+
+        print('Quantity updated for product: $productId');
+      } else {
+        print('Product not found in cart');
+      }
+    } catch (e) {
+      print('Error updating quantity: $e');
+    }
+  }
+
+  Future<void> updateDiscount(String productId, double newDiscount) async {
+    final db = await database;
+    try {
+      // Retrieve existing cart item
+      final List<Map<String, dynamic>> result = await db.query(
+        'cart',
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+
+      if (result.isNotEmpty) {
+        // Decode existing product data
+        Map<String, dynamic> productData = jsonDecode(result.first['data']);
+
+        // Update the discount
+        productData['discount'] = newDiscount;
+
+        // Save updated product back to database
+        await db.update(
+          'cart',
+          {'data': jsonEncode(productData)},
+          where: 'id = ?',
+          whereArgs: [productId],
+        );
+
+        print('Discount updated for product: $productId');
+      } else {
+        print('Product not found in cart');
+      }
+    } catch (e) {
+      print('Error updating discount: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getCartItems() async {
+    final db = await database;
+    try {
+      final results = await db.query('cart');
+      return results.map((e) {
+        final data = jsonDecode(e['data'] as String);
+        // Include GST information in the returned data
+        data['gst_rate'] = e['gst_rate'];
+        data['gst_amount'] = e['gst_amount'];
+        return Map<String, dynamic>.from(data);
+      }).toList();
+    } catch (e) {
+      print('Error retrieving cart items: $e');
+      return [];
+    }
+  }
+
+  Future<void> deleteCartItem(String productId) async {
+    final db = await database;
+    try {
+      await db.delete(
+        'cart',
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+      print('Cart item deleted: $productId');
+    } catch (e) {
+      print('Error deleting cart item: $e');
+    }
+  }
+
+  Future<void> clearCart() async {
+    final db = await database;
+    try {
+      await db.delete('cart');
+      print('Cart cleared successfully');
+    } catch (e) {
+      print('Error clearing cart: $e');
+    }
+  }
+
+  // Add this to verify database operations
+  Future<void> debugPrintCartContents() async {
+    final db = await database;
+    final results = await db.query('cart');
+    print('Current cart contents:');
+    for (var item in results) {
+      print('ID: ${item['id']}, Data: ${item['data']}');
+    }
+  }
+}

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:leads/data/models/graph-model.dart';
+import 'package:leads/widgets/custom_snckbar.dart';
 import '../../data/models/lead_list.dart';
 import '../../data/api/api_client.dart'; // Assuming the ApiClient is in this path
 import '../../data/models/dashboard_count.dart';
@@ -34,7 +35,7 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   RxInt currentPage = 0.obs; // Track the current page number
   RxBool hasMoreLeads =
       true.obs; // Flag to track if there are more leads to load
-  final ApiClient apiClient = Get.put(ApiClient());
+  // final ApiClient apiClient = Get.put(ApiClient());
   ScrollController scrollController = ScrollController(); // Add this line
   final fromDateController = TextEditingController();
   var toDateController = TextEditingController();
@@ -48,21 +49,42 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   @override
   void onInit() {
     super.onInit();
-    // scrollController.addListener(() {
-    //   if (scrollController.position.pixels == scrollController.position.maxScrollExtent) {
-    //     if (hasMoreLeads.value && !isLoading.value) {
-    //       fetchLeads(isInitialFetch: false);
-    //     }
-    //   }
-    // });
+    final List<PerformanceData> datatask = [
+      PerformanceData(label: 'Calls', achieved: 85, target: 100),
+      PerformanceData(label: 'Meeting', achieved: 75, target: 100),
+      PerformanceData(label: 'Product Sale', achieved: 70, target: 100),
+      PerformanceData(label: 'Follow-up', achieved: 65, target: 100),
+      PerformanceData(label: 'Collection', achieved: 80, target: 100),
+      PerformanceData(label: 'Sales', achieved: 90, target: 100),
+      PerformanceData(label: 'Lead', achieved: 60, target: 100),
+    ];
     fetchDashboardCount();
     // fetchLeads();
+    fetchTasksByTab("Today");
+
     fetchAssignedLead();
+    print("this is testing for every task");
     fetchFunnelData();
     fetchPieData();
     tabController =
         TabController(length: 3, vsync: this); // Initialize TabController
     pageController = PageController(); // Initialize PageController
+  }
+
+  void initializeData() {
+    fetchDashboardCount();
+    fetchTasksByTab("Today");
+    fetchAssignedLead();
+    fetchFunnelData();
+    fetchPieData();
+  }
+
+  void refreshHomePage() {
+    fetchAssignedLead();
+    fetchDashboardCount();
+    fetchTasksByTab("Today");
+    fetchFunnelData();
+    fetchPieData();
   }
 
   @override
@@ -81,7 +103,7 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
     isLoading.value = true; // Set loading to true while fetching data
     try {
       List<FunnelGraph> data =
-          await apiClient.getFunnelGraph("4", ApiEndpoints.funnelData);
+          await ApiClient().getFunnelGraph("4", ApiEndpoints.funnelData);
       funnelData.value = data; // Update the dashboardCount list
       print(ApiEndpoints.funnelData);
       // Extract counts for various categories
@@ -99,7 +121,7 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
     isLoading.value = true;
     try {
       List<DealData> data =
-          await apiClient.getPieGraph(box.read("userId"), 2024);
+          await ApiClient().getPieGraph(box.read("userId"), 2024);
       pieData.value = data;
     } catch (e) {
       print("Error fetching dashboard count: $e");
@@ -111,7 +133,8 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   Future<void> fetchDashboardCount() async {
     isLoading.value = true; // Set loading to true while fetching data
     try {
-      List<AllCountList> counts = await apiClient.getDashboardCount();
+      List<AllCountList> counts =
+          await ApiClient().getDashboardCount(ApiEndpoints.dashboardCount);
       dashboardCount.value = counts; // Update the dashboardCount list
 
       // Extract counts for various categories
@@ -158,7 +181,7 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
     isLoading.value = true; // Set loading to true while fetching data
     try {
       // Call getTaskList from the apiClient to fetch tasks
-      List<TaskList> taskList = await apiClient.getTaskList(
+      List<TaskList> taskList = await ApiClient().getTaskList(
         endPoint: ApiEndpoints.assignedTasks, // Adjust the endpoint as needed
         userId: userId,
         recordType: recordType,
@@ -189,14 +212,12 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   }
 
   void fetchAssignedLead({String? fromDate, String? toDate}) async {
-    const String endpoint =
-        "https://lead.mumbaicrm.com/api/PresalesMobile/GetDashLeadsList";
-    const String userId = "4";
+    String userId = box.read("userId");
 
     try {
       isLoading.value = true; // Set loading to true
-      final newLeads = await apiClient.getAssignedLeadList(
-        endPoint: endpoint,
+      final newLeads = await ApiClient().getAssignedLeadList(
+        endPoint: ApiEndpoints.leaddashList,
         userId: userId,
         queryParams: {
           "fromdate": fromDate,
@@ -249,17 +270,32 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   void markSelected() {
     // print(selected);
   }
-  Future<void> postStatus(body) async {
-    final response = await apiClient.taskActivity(
-      "https://lead.mumbaicrm.com/api/PresalesMobile/UpdateTaskActivity?type=US",
-      body,
-    );
+  Future<void> postStatus(List<Map<String, dynamic>> body) async {
+    try {
+      isLoading.value = true;
+      final response = await ApiClient().taskActivity(
+        ApiEndpoints.updateTaskActivity,
+        body,
+      );
 
-    // Handle the response if needed
-    if (response.success) {
-      // fetchDashboardCount();
-    } else {
-      // print("Post failed: ${response.message}");
+      if (response.success) {
+        CustomSnack.show(
+            content: response.message,
+            snackType: SnackType.success,
+            behavior: SnackBarBehavior.fixed);
+      } else {
+        CustomSnack.show(
+            content: response.message,
+            snackType: SnackType.error,
+            behavior: SnackBarBehavior.fixed);
+      }
+    } catch (e) {
+      CustomSnack.show(
+          content: "Failed to update tasks: ${e.toString()}",
+          snackType: SnackType.error,
+          behavior: SnackBarBehavior.fixed);
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -273,10 +309,31 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   String formatDate(String rawDate) {
     try {
       DateTime parsedDate = DateFormat("MM/dd/yyyy hh:mm:ss a").parse(rawDate);
-      return DateFormat("dd MMM yyyy")
-          .format(parsedDate); // Outputs: 09 Nov 2024
+      return DateFormat("dd/MM/yy").format(parsedDate); // Outputs: 09 Nov 2024
     } catch (e) {
       return rawDate; // Fallback in case of parsing errors
     }
   }
+
+  RxString selectedFilter = 'Last 30 Days'.obs;
+  RxBool isCustomDateRange = false.obs;
+  RxString customDateRangeLabel = ''.obs;
+
+  void fetchFilteredData(
+      {required DateTime startDate, required DateTime endDate}) {
+    // Implement your data fetching logic here
+    print('Fetching data from $startDate to $endDate');
+  }
+}
+
+class PerformanceData {
+  final String label;
+  final double achieved;
+  final double target;
+
+  const PerformanceData({
+    required this.label,
+    required this.achieved,
+    required this.target,
+  });
 }

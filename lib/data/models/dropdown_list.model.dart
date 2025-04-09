@@ -337,6 +337,154 @@ class ownerDropdownList {
   }
 }
 
+class CompanyName {
+  final String id;
+  final String name;
+
+  CompanyName({required this.id, required this.name});
+
+  // Factory constructor to create a CompanyName instance from a JSON map
+  factory CompanyName.fromJson(Map<String, dynamic> json) {
+    return CompanyName(
+      id: json['id'] as String,
+      name: json['name'] as String,
+    );
+  }
+
+  // Method to convert a CompanyName instance to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
+}
+
+class PurchaseGst {
+  final String id;
+  final String dis;
+  final String ptax;
+
+  PurchaseGst({
+    required this.id,
+    required this.dis,
+    required this.ptax,
+  });
+
+  // Factory method to create an instance from JSON data
+  factory PurchaseGst.fromJson(Map<String, dynamic> json) {
+    return PurchaseGst(
+      id: json['id'] as String,
+      dis: json['dis'] as String,
+      ptax: json['ptax'] as String,
+    );
+  }
+
+  // Method to convert the instance to JSON format
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'dis': dis,
+      'ptax': ptax,
+    };
+  }
+}
+
+class SGST {
+  final String id;
+  final String dis;
+  final String stax;
+
+  SGST({required this.id, required this.dis, required this.stax});
+
+  // Factory constructor to create a SGST instance from a JSON map
+  factory SGST.fromJson(Map<String, dynamic> json) {
+    return SGST(
+      id: json['id'] as String,
+      dis: json['dis'] as String,
+      stax: json['stax'] as String,
+    );
+  }
+
+  // Method to convert a SGST instance to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'dis': dis,
+      'stax': stax,
+    };
+  }
+}
+
+class UnitList {
+  final String id;
+  final String uName;
+
+  UnitList({required this.id, required this.uName});
+
+  // Factory constructor to create a UnitList instance from a JSON map
+  factory UnitList.fromJson(Map<String, dynamic> json) {
+    return UnitList(
+      id: json['id'] as String,
+      uName: json['uName'] as String,
+    );
+  }
+
+  // Method to convert a UnitList instance to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'uName': uName,
+    };
+  }
+}
+
+class Status {
+  final String id;
+  final String status;
+
+  Status({required this.id, required this.status});
+
+  // Factory constructor to create a Status instance from a JSON map
+  factory Status.fromJson(Map<String, dynamic> json) {
+    return Status(
+      id: json['id'] as String,
+      status: json['status'] as String,
+    );
+  }
+
+  // Method to convert a Status instance to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'status': status,
+    };
+  }
+}
+
+class HSN {
+  final String id;
+  final String shortName;
+
+  HSN({required this.id, required this.shortName});
+
+  // Factory constructor to create an HSN instance from a JSON map
+  factory HSN.fromJson(Map<String, dynamic> json) {
+    return HSN(
+      id: json['id'] as String,
+      shortName: json['shortName'] as String,
+    );
+  }
+
+  // Method to convert an HSN instance to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'shortName': shortName,
+    };
+  }
+}
+
 class IndustryListDropdown {
   String? id;
   String? name;
@@ -416,5 +564,165 @@ class areaListDropDown {
     data['area'] = this.area;
     data['areaID'] = this.areaID;
     return data;
+  }
+}
+
+class UserType {
+  final String id;
+  final String userType;
+
+  UserType({
+    required this.id,
+    required this.userType,
+  });
+
+  // Factory method to create a UserType from a JSON map
+  factory UserType.fromJson(Map<String, dynamic> json) {
+    return UserType(
+      id: json['id'] as String,
+      userType: json['usertype'] as String,
+    );
+  }
+
+  // Method to convert a UserType object to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'usertype': userType,
+    };
+  }
+
+  // Method to create a list of UserType objects from a JSON list
+  static List<UserType> fromJsonList(List<dynamic> jsonList) {
+    return jsonList.map((json) => UserType.fromJson(json)).toList();
+  }
+
+  // Method to convert a list of UserType objects to a JSON list
+  static List<Map<String, dynamic>> toJsonList(List<UserType> userTypes) {
+    return userTypes.map((userType) => userType.toJson()).toList();
+  }
+}
+
+class Company {
+  final String id;
+  final String companyName;
+
+  Company({
+    required this.id,
+    required this.companyName,
+  });
+
+  // Factory method to create a Company from a JSON map
+  factory Company.fromJson(Map<String, dynamic> json) {
+    return Company(
+      id: json['id'] as String,
+      companyName: json['companyname'] as String,
+    );
+  }
+
+  // Method to convert a Company object to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'companyname': companyName,
+    };
+  }
+
+  // Method to create a list of Company objects from a JSON list
+  static List<Company> fromJsonList(List<dynamic> jsonList) {
+    return jsonList.map((json) => Company.fromJson(json)).toList();
+  }
+
+  // Method to convert a list of Company objects to a JSON list
+  static List<Map<String, dynamic>> toJsonList(List<Company> companies) {
+    return companies.map((company) => company.toJson()).toList();
+  }
+}
+
+class CordinatorList {
+  final String username; // Name of the user
+  final String userId; // ID of the user
+
+  CordinatorList({
+    required this.username,
+    required this.userId,
+  });
+
+  // Factory method to create a User object from JSON
+  factory CordinatorList.fromJson(Map<String, dynamic> json) {
+    return CordinatorList(
+      username: json['username'] ?? '',
+      userId: json['userid'] ?? '',
+    );
+  }
+
+  // Method to convert a User object to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'username': username,
+      'userid': userId,
+    };
+  }
+}
+
+class MrList {
+  String? username;
+  String? userid;
+  String? id;
+
+  MrList({this.username, this.userid, this.id});
+
+  // Factory constructor to create Cordinator from JSON
+  factory MrList.fromJson(Map<String, dynamic> json) {
+    return MrList(
+      username: json['username'],
+      userid: json['userid'],
+      id: json['id'],
+    );
+  }
+
+  // Method to convert Cordinator to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'username': username,
+      'userid': userid,
+      'id': id,
+    };
+  }
+}
+
+class Branch {
+  final String id;
+  final String branchName;
+
+  Branch({
+    required this.id,
+    required this.branchName,
+  });
+
+  // Factory method to create a Branch from a JSON map
+  factory Branch.fromJson(Map<String, dynamic> json) {
+    return Branch(
+      id: json['id'] as String,
+      branchName: json['branchname'] as String,
+    );
+  }
+
+  // Method to convert a Branch object to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'branchname': branchName,
+    };
+  }
+
+  // Method to create a list of Branch objects from a JSON list
+  static List<Branch> fromJsonList(List<dynamic> jsonList) {
+    return jsonList.map((json) => Branch.fromJson(json)).toList();
+  }
+
+  // Method to convert a list of Branch objects to a JSON list
+  static List<Map<String, dynamic>> toJsonList(List<Branch> branches) {
+    return branches.map((branch) => branch.toJson()).toList();
   }
 }

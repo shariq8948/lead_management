@@ -55,6 +55,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1096183180732',
     projectId: 'lead-management-f7402',
     storageBucket: 'lead-management-f7402.appspot.com',
+    databaseURL:
+        'https://lead-management-f7402-default-rtdb.asia-southeast1.firebasedatabase.app', // Your Firebase Realtime Database URL
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -64,5 +66,7 @@ class DefaultFirebaseOptions {
     projectId: 'lead-management-f7402',
     storageBucket: 'lead-management-f7402.appspot.com',
     iosBundleId: 'com.psmsofttech.leads',
+    databaseURL:
+        'https://lead-management-f7402-default-rtdb.asia-southeast1.firebasedatabase.app', // Your Firebase Realtime Database URL
   );
 }

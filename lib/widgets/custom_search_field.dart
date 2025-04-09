@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'dart:async'; // Import for Timer
 import 'package:get/get.dart';
 
+import 'custom_loader.dart';
+
 class CustomSearchField extends StatefulWidget {
   final String hintText;
   final TextEditingController? controller;
@@ -33,7 +35,7 @@ class CustomSearchField extends StatefulWidget {
 
 class _CustomSearchFieldState extends State<CustomSearchField> {
   Timer? _debounce;
-  bool _isLoading = false;  // To track if search is loading
+  bool _isLoading = false; // To track if search is loading
 
   // Handle search input with debounce
   void _onSearchChanged(String query) {
@@ -46,14 +48,14 @@ class _CustomSearchFieldState extends State<CustomSearchField> {
       if (query.isNotEmpty) {
         if (widget.onSearch != null) {
           setState(() {
-            _isLoading = true;  // Set loading state to true
+            _isLoading = true; // Set loading state to true
           });
-          widget.onSearch!(query);  // Trigger the search callback
+          widget.onSearch!(query); // Trigger the search callback
         }
       } else {
         // Optionally handle clearing search results when query is empty
         setState(() {
-          _isLoading = false;  // Set loading state to false
+          _isLoading = false; // Set loading state to false
         });
       }
     });
@@ -106,21 +108,21 @@ class _CustomSearchFieldState extends State<CustomSearchField> {
           children: [
             // Search button
             _isLoading
-                ? const CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-            )
+                ? CustomLoader()
                 : IconButton(
-              icon: const Icon(Icons.search, size: 20, color: Colors.grey),
-              onPressed: () {
-                if (widget.onSearch != null && widget.controller != null) {
-                  setState(() {
-                    _isLoading = true; // Set loading state to true when search is triggered
-                  });
-                  widget.onSearch!(widget.controller!.text);
-                }
-              },
-            ),
+                    icon:
+                        const Icon(Icons.search, size: 20, color: Colors.grey),
+                    onPressed: () {
+                      if (widget.onSearch != null &&
+                          widget.controller != null) {
+                        setState(() {
+                          _isLoading =
+                              true; // Set loading state to true when search is triggered
+                        });
+                        widget.onSearch!(widget.controller!.text);
+                      }
+                    },
+                  ),
             // Clear button
             IconButton(
               icon: const Icon(Icons.clear, size: 20, color: Colors.grey),
@@ -200,9 +202,9 @@ class DecoratedInputBorder extends InputBorder {
   @override
   void paint(Canvas canvas, Rect rect,
       {double? gapStart,
-        double gapExtent = 0.0,
-        double gapPercentage = 0.0,
-        TextDirection? textDirection}) {
+      double gapExtent = 0.0,
+      double gapPercentage = 0.0,
+      TextDirection? textDirection}) {
     final clipPath = Path()
       ..addRect(const Rect.fromLTWH(-5000, -5000, 10000, 10000))
       ..addPath(getInnerPath(rect), Offset.zero)

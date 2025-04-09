@@ -1,306 +1,178 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class MobileTableView extends StatelessWidget {
-  final List<Map<String, String>> data = [
-    {
-      "Date": "21/04/2024",
-      "Customer": "Suyog ss",
-      "Mobile": "N/A",
-      "Amount": "430",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "yfrryr22466",
-      "Bank": "00091325465554",
-      "Remark": "This is for testing",
-      "Collected By": "L4west L4west"
-    },
-    {
-      "Date": "17/03/2024",
-      "Customer": "Harshad",
-      "Mobile": "9322652067",
-      "Amount": "6630",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "",
-      "Bank": "",
-      "Remark": "",
-      "Collected By": "mr4 mr4"
-    },
-    {
-      "Date": "17/03/2024",
-      "Customer": "Harshad",
-      "Mobile": "9322652067",
-      "Amount": "6630",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "",
-      "Bank": "",
-      "Remark": "",
-      "Collected By": "mr4 mr4"
-    },
-    {
-      "Date": "17/03/2024",
-      "Customer": "Harshad",
-      "Mobile": "9322652067",
-      "Amount": "6630",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "",
-      "Bank": "",
-      "Remark": "",
-      "Collected By": "mr4 mr4"
-    },
-    {
-      "Date": "17/03/2024",
-      "Customer": "Harshad",
-      "Mobile": "9322652067",
-      "Amount": "6630",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "",
-      "Bank": "",
-      "Remark": "",
-      "Collected By": "mr4 mr4"
-    },
-    {
-      "Date": "17/03/2024",
-      "Customer": "Harshad",
-      "Mobile": "9322652067",
-      "Amount": "6630",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "",
-      "Bank": "",
-      "Remark": "",
-      "Collected By": "mr4 mr4"
-    },
-    {
-      "Date": "17/03/2024",
-      "Customer": "Harshad",
-      "Mobile": "9322652067",
-      "Amount": "6630",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "",
-      "Bank": "",
-      "Remark": "",
-      "Collected By": "mr4 mr4"
-    },
-    {
-      "Date": "17/03/2024",
-      "Customer": "Harshad",
-      "Mobile": "9322652067",
-      "Amount": "6630",
-      "Mode of Payment": "Cash",
-      "Cheque No./Ref.No": "",
-      "Bank": "",
-      "Remark": "",
-      "Collected By": "mr4 mr4"
-    },
-    // Add more entries as needed
-  ];
+import 'controller.dart';
+
+class PaymentsView extends StatelessWidget {
+  final PaymentsController controller = Get.put(PaymentsController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Payments"),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [Color(0xFFE1FFED), Color(0xFFE6E6E6)],
+        title: Text(
+          'Payment Approvals',
+          style: GoogleFonts.roboto(
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
           ),
         ),
-        child: SafeArea(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(8.0),
-            itemCount: data.length,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        iconTheme: IconThemeData(color: Colors.black54),
+      ),
+      body: Obx(() => _buildBody(context)),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (controller.payments.isEmpty) {
+      return _buildEmptyState();
+    }
+    return Column(
+      children: [
+        _buildSummaryCard(),
+        Expanded(
+          child: ListView.separated(
+            padding: EdgeInsets.all(16),
+            itemCount: controller.payments.length,
+            separatorBuilder: (context, index) => Divider(height: 24),
             itemBuilder: (context, index) {
-              final entry = data[index];
-              return buildPayementsCard(entry, index); // Use the custom widget
+              final payment = controller.payments[index];
+              return _buildPaymentCard(payment, index);
             },
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildSummaryItem('Total Pending', '₹52,450'),
+          _buildSummaryItem('Approved', '₹124,750'),
+          _buildSummaryItem('Rejected', '₹8,200'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String title, String value) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.roboto(
+            color: Colors.black54,
+            fontSize: 12,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.roboto(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentCard(Map<String, dynamic> payment, int index) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: Text(
+          payment['Customer'],
+          style: GoogleFonts.roboto(
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '₹${payment['Amount']} • ${payment['Date']}',
+                  style: GoogleFonts.roboto(
+                    color: Colors.black54,
+                  ),
+                ),
+                Text(
+                  payment['Mode of Payment'],
+                  style: GoogleFonts.roboto(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => controller.approvePayment(index),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Approve Payment',
+                  style: GoogleFonts.roboto(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget buildPayementsCard(final Map<String, String> entry, index) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Date:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Date"] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              // Customer Name Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Name:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Customer"] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              // Mobile Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Mobile:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Mobile"] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              // Cheque No. and Ref. No. Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Cheque No.:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Cheque No."] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Ref. No.:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Ref.No"] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              // Bank Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Bank:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Bank"] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              // Remark Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Remark:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Remark"] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              // Collected By Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Collected By:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Text(entry["Collected By"] ?? "N/A",
-                      style: TextStyle(color: Colors.grey[700])),
-                ],
-              ),
-              Divider(),
-              // Amount Row (Highlighted)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Amount:",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black)),
-                  Container(
-                    padding:
-                        EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-                    decoration: BoxDecoration(
-                      color: Colors.green[100], // Light green background
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      "₹${entry["Amount"] ?? "0"}",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[800], // Dark green text color
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Divider(),
-              // Action Buttons Row
-              SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      // Handle Decline button action
-                      print("Declined entry $index");
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red, // Vibrant red for Decline
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text("Decline"),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Handle Approve button action
-                      print("Approved entry $index");
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.green, // Vibrant green for Approve
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text("Approve"),
-                  ),
-                ],
-              ),
-            ],
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.payments_outlined,
+            size: 100,
+            color: Colors.grey.shade400,
           ),
-        ),
+          SizedBox(height: 16),
+          Text(
+            'No Payments Pending',
+            style: GoogleFonts.roboto(
+              color: Colors.black54,
+              fontSize: 16,
+            ),
+          ),
+        ],
       ),
     );
   }

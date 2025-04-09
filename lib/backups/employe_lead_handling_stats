@@ -1,0 +1,978 @@
+class LeadHandlingStatusReport extends StatelessWidget {
+  LeadHandlingStatusReport({Key? key}) : super(key: key);
+
+  final LeadHandlingController controller = Get.put(LeadHandlingController());
+  final searchController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return ReportPageWrapper(
+      title: 'Lead Handling Status',
+      showFilterIcon: true,
+      onFilterTap: () => _showFilterModal(context),
+      onDateRangeSelected: controller.onDateRangeSelected,
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSummaryCards(context),
+                const SizedBox(height: 24),
+                _buildToggleView(),
+                const SizedBox(height: 16),
+                controller.showByDepartment.value
+                    ? _buildDepartmentView()
+                    : _buildPerformanceChart(),
+                const SizedBox(height: 24),
+                _buildSearchAndPagination(),
+                const SizedBox(height: 16),
+                _buildEmployeeList(),
+                const SizedBox(height: 16),
+                _buildPaginationControls(),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildToggleView() {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'View Mode:',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Obx(() => ToggleButtons(
+              isSelected: [
+                !controller.showByDepartment.value,
+                controller.showByDepartment.value
+              ],
+              onPressed: (index) {
+                if (index == 0) {
+                  controller.showByDepartment.value = false;
+                } else {
+                  controller.showByDepartment.value = true;
+                }
+              },
+              borderRadius: BorderRadius.circular(8),
+              selectedBorderColor: Colors.blue,
+              selectedColor: Colors.blue,
+              fillColor: Colors.blue.shade50,
+              constraints: BoxConstraints(minWidth: 80, minHeight: 36),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'Performance',
+                    style: GoogleFonts.montserrat(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'Department',
+                    style: GoogleFonts.montserrat(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            )),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCards(BuildContext context) {
+    // Calculate totals
+    int totalAssigned = 0;
+    int totalContacted = 0;
+    int totalConverted = 0;
+
+    for (var data in controller.allLeadStatusData) {
+      totalAssigned += data.assigned;
+      totalContacted += data.contacted;
+      totalConverted += data.converted;
+    }
+
+    double overallConversionRate =
+        totalAssigned > 0 ? (totalConverted / totalAssigned * 100) : 0;
+    double contactRate =
+        totalAssigned > 0 ? (totalContacted / totalAssigned * 100) : 0;
+
+    // Determine if we're on a small screen
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Summary',
+          style: GoogleFonts.montserrat(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Responsive layout for the cards
+        if (isSmallScreen) ...[
+          _summaryCard(
+            'Total Team',
+            controller.allLeadStatusData.length.toString(),
+            Icons.people,
+            Colors.indigo.shade100,
+            Colors.indigo,
+          ),
+          const SizedBox(height: 8),
+          _summaryCard(
+            'Total Assigned',
+            totalAssigned.toString(),
+            Icons.assignment,
+            Colors.blue.shade100,
+            Colors.blue,
+          ),
+          const SizedBox(height: 8),
+          _summaryCard(
+            'Total Contacted',
+            totalContacted.toString(),
+            Icons.contact_phone,
+            Colors.orange.shade100,
+            Colors.orange,
+          ),
+          const SizedBox(height: 8),
+          _summaryCard(
+            'Total Converted',
+            totalConverted.toString(),
+            Icons.check_circle,
+            Colors.green.shade100,
+            Colors.green,
+          ),
+          const SizedBox(height: 8),
+          _summaryCard(
+            'Contact Rate',
+            '${contactRate.toStringAsFixed(1)}%',
+            Icons.call_made,
+            Colors.amber.shade100,
+            Colors.amber.shade800,
+          ),
+          const SizedBox(height: 8),
+          _summaryCard(
+            'Conversion Rate',
+            '${overallConversionRate.toStringAsFixed(1)}%',
+            Icons.trending_up,
+            Colors.purple.shade100,
+            Colors.purple,
+          ),
+        ] else ...[
+          // Original layout for larger screens
+          Row(
+            children: [
+              Expanded(
+                child: _summaryCard(
+                  'Total Team',
+                  controller.allLeadStatusData.length.toString(),
+                  Icons.people,
+                  Colors.indigo.shade100,
+                  Colors.indigo,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _summaryCard(
+                  'Total Assigned',
+                  totalAssigned.toString(),
+                  Icons.assignment,
+                  Colors.blue.shade100,
+                  Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _summaryCard(
+                  'Total Contacted',
+                  totalContacted.toString(),
+                  Icons.contact_phone,
+                  Colors.orange.shade100,
+                  Colors.orange,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _summaryCard(
+                  'Total Converted',
+                  totalConverted.toString(),
+                  Icons.check_circle,
+                  Colors.green.shade100,
+                  Colors.green,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _summaryCard(
+                  'Contact Rate',
+                  '${contactRate.toStringAsFixed(1)}%',
+                  Icons.call_made,
+                  Colors.amber.shade100,
+                  Colors.amber.shade800,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _summaryCard(
+                  'Conversion Rate',
+                  '${overallConversionRate.toStringAsFixed(1)}%',
+                  Icons.trending_up,
+                  Colors.purple.shade100,
+                  Colors.purple,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _summaryCard(
+    String title,
+    String value,
+    IconData icon,
+    Color bgColor,
+    Color iconColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: bgColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: iconColor, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black54,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.montserrat(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformanceChart() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Check if we're on a small screen
+        final isSmallScreen = constraints.maxWidth < 600;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Performance Categories',
+              style: GoogleFonts.montserrat(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (isSmallScreen) ...[
+              // Stacked layout for small screens
+              _buildCategoryCard(
+                'Top Performers',
+                controller.performanceCategories['Top Performers']?.length ?? 0,
+                Colors.green.shade400,
+                Icons.emoji_events,
+              ),
+              const SizedBox(height: 8),
+              _buildCategoryCard(
+                'Average',
+                controller
+                        .performanceCategories['Average Performers']?.length ??
+                    0,
+                Colors.blue.shade400,
+                Icons.thumbs_up_down,
+              ),
+              const SizedBox(height: 8),
+              _buildCategoryCard(
+                'Underperformers',
+                controller.performanceCategories['Underperformers']?.length ??
+                    0,
+                Colors.orange.shade400,
+                Icons.signal_cellular_alt_1_bar,
+              ),
+            ] else ...[
+              // Row layout for larger screens
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCategoryCard(
+                      'Top Performers',
+                      controller.performanceCategories['Top Performers']?.length ?? 0,
+                      Colors.green.shade400,
+                      Icons.emoji_events,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildCategoryCard(
+                      'Average',
+                      controller
+                              .performanceCategories['Average Performers']?.length ??
+                          0,
+                      Colors.blue.shade400,
+                      Icons.thumbs_up_down,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildCategoryCard(
+                      'Underperformers',
+                      controller.performanceCategories['Underperformers']?.length ??
+                          0,
+                      Colors.orange.shade400,
+                      Icons.signal_cellular_alt_1_bar,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 24),
+            Container(
+              height: 200,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade100,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: _buildAggregatedPerformanceChart(),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 24,
+              runSpacing: 8,
+              children: [
+                _chartLegendItem('Contact Rate', Colors.orange),
+                _chartLegendItem('Conversion Rate', Colors.green),
+              ],
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  Widget _buildCategoryCard(
+    String title,
+    int count,
+    Color color,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            count.toString(),
+            style: GoogleFonts.montserrat(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAggregatedPerformanceChart() {
+    // Create sample data for the grouped bar chart
+    // In a real app, you would aggregate this from your actual data
+    List<Map<String, dynamic>> groups = [
+      {
+        'group': 'Top',
+        'contactRate': 92.5,
+        'conversionRate': 67.2,
+      },
+      {
+        'group': 'Average',
+        'contactRate': 84.6,
+        'conversionRate': 43.8,
+      },
+      {
+        'group': 'Under',
+        'contactRate': 73.1,
+        'conversionRate': 28.4,
+      },
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Adjust bar width based on available space
+        final barWidth = constraints.maxWidth < 300 ? 8.0 : 12.0;
+
+        return BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceAround,
+            maxY: 100,
+            barTouchData: BarTouchData(
+              enabled: true,
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  String label;
+                  switch (rodIndex) {
+                    case 0:
+                      label = 'Contact Rate';
+                      break;
+                    case 1:
+                      label = 'Conversion Rate';
+                      break;
+                    default:
+                      label = '';
+                  }
+                  return BarTooltipItem(
+                    '$label: ${rod.toY.toStringAsFixed(1)}%',
+                    const TextStyle(color: Colors.white),
+                  );
+                },
+              ),
+            ),
+            titlesData: FlTitlesData(
+              show: true,
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (value, meta) {
+                    if (value >= 0 && value < groups.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          groups[value.toInt()]['group'],
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      );
+                    }
+                    return const Text('');
+                  },
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: constraints.maxWidth > 300, // Hide on small screens
+                  getTitlesWidget: (value, meta) {
+                    if (value % 20 == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Text(
+                          '${value.toInt()}%',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      );
+                    }
+                    return const Text('');
+                  },
+                ),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            barGroups: List.generate(
+              groups.length,
+              (index) {
+                final data = groups[index];
+                return BarChartGroupData(
+                  x: index,
+                  barRods: [
+                    BarChartRodData(
+                      toY: data['contactRate'],
+                      color: Colors.orange,
+                      width: barWidth,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(4),
+                      ),
+                    ),
+                    BarChartRodData(
+                      toY: data['conversionRate'],
+                      color: Colors.green,
+                      width: barWidth,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(4),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            gridData: FlGridData(
+              show: true,
+              horizontalInterval: 20,
+              getDrawingHorizontalLine: (value) => FlLine(
+                color: Colors.grey.shade200,
+                strokeWidth: 1,
+              ),
+            ),
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _buildDepartmentView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Department Performance',
+          style: GoogleFonts.montserrat(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.shade100,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: controller.departmentStats.length,
+            separatorBuilder: (context, index) =>
+                Divider(height: 1, color: Colors.grey.shade200),
+            itemBuilder: (context, index) {
+              String department =
+                  controller.departmentStats.keys.elementAt(index);
+              Map<String, dynamic> stats =
+                  controller.departmentStats[department]!;
+
+              return Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Text(
+                    department,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    '${stats['employeeCount']} employees · ${stats['conversionRate'].toStringAsFixed(1)}% conversion',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Container(
+                    width: 60,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${stats['totalConverted']}',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  children: [
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isSmallScreen = constraints.maxWidth < 450;
+
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: isSmallScreen
+                                ? Column(
+                                    children: [
+                                      _departmentStatItem(
+                                        'Assigned',
+                                        stats['totalAssigned'].toString(),
+                                        Colors.blue,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _departmentStatItem(
+                                        'Contacted',
+                                        stats['totalContacted'].toString(),
+                                        Colors.orange,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _departmentStatItem(
+                                        'Converted',
+                                        stats['totalConverted'].toString(),
+                                        Colors.green,
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    children: [
+                                      Expanded(
+                                        child: _departmentStatItem(
+                                          'Assigned',
+                                          stats['totalAssigned'].toString(),
+                                          Colors.blue,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: _departmentStatItem(
+                                          'Contacted',
+                                          stats['totalContacted'].toString(),
+                                          Colors.orange,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: _departmentStatItem(
+                                          'Converted',
+                                          stats['totalConverted'].toString(),
+                                          Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: LinearProgressIndicator(
+                                      value: stats['contactRate'] / 100,
+                                      backgroundColor: Colors.orange.shade100,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                                      minHeight: 8,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: isSmallScreen ? 2 : 1,
+                                    child: Text(
+                                      '${stats['contactRate'].toStringAsFixed(1)}% Contact',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 10,
+                                        color: Colors.black54,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: LinearProgressIndicator(
+                                      value: stats['conversionRate'] / 100,
+                                      backgroundColor: Colors.green.shade100,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                      minHeight: 8,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: isSmallScreen ? 2 : 1,
+                                    child: Text(
+                                      '${stats['conversionRate'].toStringAsFixed(1)}% Conversion',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 10,
+                                        color: Colors.black54,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _departmentStatItem(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 10,
+            color: Colors.black54,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _chartLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 10,
+            color: Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchAndPagination() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 500;
+
+        if (isSmallScreen) {
+          return Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: TextField(
+                  controller: searchController,
+                  onChanged: (value) => controller.setSearch(value),
+                  decoration: InputDecoration(
+                    hintText: 'Search employees...',
+                    hintStyle: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      color: Colors.grey.shade400,
+                    ),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  DropdownButton<int>(
+                    value: controller.itemsPerPage.value,
+                    hint: Text('Items', style: GoogleFonts.montserrat(fontSize: 12)),
+                    icon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade500),
+                    underline: Container(),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                    items: [10, 20, 50, 100].map((int value) {
+                      return DropdownMenuItem<int>(
+                        value: value,
+                        child: Text('$value items'),
+                      );
+                    }).toList(),
+                    onChanged: (int? value) {
+                      if (value != null) controller.setItemsPerPage(value);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          );
+        } else {
+          return Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (value) => controller.setSearch(value),
+                    decoration: InputDecoration(
+                      hintText: 'Search employees...',
+                      hintStyle: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        color: Colors.grey.shade400,
+                      ),
+                      prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<int>(
+                value: controller.itemsPerPage.value,
+                hint: Text('Items', style: GoogleFonts.montserrat(fontSize: 12)),
+                icon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade500),
+                underline: Container(),
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                items: [10, 20, 50, 100].map((int value) {
+                  return DropdownMenuItem<int>(
+                    value: value,
+                    child: Text('$value items'),
+                  );
+                }).toList(),
+                onChanged: (int? value) {
+                  if (value != null) controller.setItemsPerPage(value);
+                },
+              ),
+            ],
+          );
+        }
+      }
+    );
+  }
+
+  Widget _buildEmployeeList() {
+    if (controller.displayData.isEmpty) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [

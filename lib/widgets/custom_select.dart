@@ -1,12 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:get/get.dart';
 
 import '../utils/constants.dart';
 import 'custom_field.dart';
-
+import 'custom_loader.dart';
 
 class CustomSelectItem {
   String id;
@@ -19,7 +18,7 @@ class CustomSelectItem {
 }
 
 class CustomSelect extends StatelessWidget {
-  // Params
+  // Existing parameters remain the same
   final List<CustomSelectItem> mainList;
   final Function(CustomSelectItem val) onSelect;
   final String placeholder;
@@ -34,7 +33,9 @@ class CustomSelect extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool withShadow;
   final bool? withIcon;
-  final Widget?customIcon;
+  final Widget? customIcon;
+  final bool showPlusIcon;
+  final VoidCallback? onPlusPressed;
 
   const CustomSelect({
     super.key,
@@ -46,14 +47,17 @@ class CustomSelect extends StatelessWidget {
     required this.textEditCtlr,
     this.showLabel = false,
     this.onTapField,
-    this.withIcon=false,
+    this.withIcon = false,
     this.onTapOutsideField,
     this.suggestionFn,
     this.filledColor = Colors.white,
     this.labelColor = Colors.black,
     this.validator,
     this.withShadow = true,
-  });
+    this.showPlusIcon = false,
+    this.onPlusPressed,
+  }) : assert(!showPlusIcon || onPlusPressed != null,
+            'onPlusPressed is required when showPlusIcon is true');
 
   String normalize(String str) {
     return str.toLowerCase().trim().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -61,43 +65,44 @@ class CustomSelect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        showLabel == true
-            ? Padding(
-          padding: const EdgeInsets.only(
-            bottom: 5,
-            // left: 12,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: labelColor,
-              fontFamily: "JosefinSans",
-              fontSize: Get.size.width * 0.035,
-              fontWeight: FontWeight.w400,
+        if (showLabel == true)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: labelColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
           ),
-        )
-            : const SizedBox.shrink(),
         TypeAheadField<CustomSelectItem>(
           itemSeparatorBuilder: (ctx, idx) {
-            return const Divider();
+            return const Divider(
+              height: 1,
+              color: Colors.grey,
+              indent: 12,
+              endIndent: 12,
+            );
           },
           suggestionsCallback: (search) {
             if (suggestionFn != null) {
               return suggestionFn!(search);
             }
             return mainList.where(
-                  (element) {
+              (element) {
                 return normalize(element.value).contains(
                   normalize(search),
                 );
               },
             ).toList();
           },
-          // autoFlipDirection: true,
           hideOnUnfocus: true,
           hideOnSelect: true,
           controller: textEditCtlr,
@@ -105,72 +110,119 @@ class CustomSelect extends StatelessWidget {
             return const Padding(
               padding: EdgeInsets.all(8.0),
               child: Center(
-                child: CircularProgressIndicator.adaptive(
-                  backgroundColor: primary1Color,
-                ),
+                child: CustomLoader(),
               ),
             );
           },
           builder: (context, controller, focusNode) {
-            return CustomField(
-              editingController: controller,
-              focusNode: focusNode,
-              hintText: placeholder,
-              labelText: label,
-              inputAction: TextInputAction.next,
-              inputType: TextInputType.text,
-              onFieldTap: onTapField,
-              onOutsideTap: onTapOutsideField,
-              bgColor: filledColor,
-              validator: validator,
-              withShadow: withShadow,
-              showIcon: withIcon == true,
-              customIcon: withIcon == true
-                  ? customIcon
-                  : null,
-            );
-          },
-
-          itemBuilder: (context, item) {
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                item.value,
-                textAlign: TextAlign.start,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  overflow: TextOverflow.ellipsis,
+            return Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      FocusScope.of(context).requestFocus(FocusNode());
+                    },
+                    child: CustomField(
+                      editingController: controller,
+                      focusNode: focusNode,
+                      hintText: placeholder,
+                      labelText: label,
+                      inputAction: TextInputAction.next,
+                      inputType: TextInputType.text,
+                      onFieldTap: onTapField,
+                      onOutsideTap: onTapOutsideField,
+                      bgColor: filledColor,
+                      validator: validator,
+                      withShadow: withShadow,
+                      showIcon: withIcon == true,
+                      customIcon: withIcon == true
+                          ? customIcon ??
+                              Icon(
+                                Icons.arrow_drop_down,
+                                color: theme.primaryColor,
+                              )
+                          : null,
+                    ),
+                  ),
                 ),
-                maxLines: 2,
-              ),
+                if (showPlusIcon) ...[
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor,
+                      borderRadius: BorderRadius.only(
+                        bottomRight: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                        topLeft: Radius.circular(1),
+                        bottomLeft: Radius.circular(1),
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: IconButton(
+                        icon: const Icon(Icons.add, size: 28),
+                        onPressed: onPlusPressed,
+                        color: Colors.white,
+                        splashColor: Colors.white.withOpacity(0.3),
+                        highlightColor: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                  )
+                ],
+              ],
             );
           },
           decorationBuilder: (context, child) {
             return Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    spreadRadius: 0,
-                    blurRadius: 10,
-                    offset: const Offset(0, 1),
+                    color: Colors.grey.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
               ),
               child: child,
             );
           },
           constraints: const BoxConstraints(
-            maxHeight: 200,
+            maxHeight: 250,
           ),
           onSelected: onSelect,
           hideWithKeyboard: false,
           hideOnEmpty: true,
-          // suggestionsController: suggestionsController,
+          itemBuilder: (context, item) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Text(
+                item.value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          },
         ),
       ],
     );

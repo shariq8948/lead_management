@@ -51,6 +51,7 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      autofocus: false,
       controller: textController,
       keyboardType: keyboardType,
       obscureText: passwordField && secure && !showPass,
@@ -67,6 +68,7 @@ class CustomTextField extends StatelessWidget {
       ),
       decoration: InputDecoration(
         labelText: labelText,
+        focusColor: Colors.white,
         hintText: hintText,
         hintStyle: hintStyle ?? TextStyle(color: Colors.grey.shade500),
         labelStyle: labelStyle ??
@@ -75,8 +77,8 @@ class CustomTextField extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade700,
             ),
-        contentPadding:
-        contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: contentPadding ??
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         filled: true,
         fillColor: fillColor ?? Colors.grey.shade100,
         prefixIcon: icon,
@@ -98,18 +100,18 @@ class CustomTextField extends StatelessWidget {
         ),
         suffixIcon: passwordField
             ? GestureDetector(
-          onTap: () {
-            if (showPassFn != null) {
-              showPassFn!();
-            }
-          },
-          child: Icon(
-            showPass
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
-            color: Colors.grey.shade600,
-          ),
-        )
+                onTap: () {
+                  if (showPassFn != null) {
+                    showPassFn!();
+                  }
+                },
+                child: Icon(
+                  showPass
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: Colors.grey.shade600,
+                ),
+              )
             : null,
       ),
     );

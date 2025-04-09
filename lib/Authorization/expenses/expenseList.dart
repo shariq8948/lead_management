@@ -1,250 +1,239 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:leads/Authorization/expenses/expenseDetails.dart';
+import 'package:intl/intl.dart';
 
-class ExpenselistPage extends StatelessWidget {
-  const ExpenselistPage({super.key});
+import 'controller.dart';
+import 'expenseDetails.dart';
+
+class ExpenseListPage extends StatelessWidget {
+  const ExpenseListPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final ExpenseController controller = Get.put(ExpenseController());
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Expenses"),
-      ),
-      body: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [Color(0xFFE1FFED), Color(0xFFE6E6E6)],
-            ),
+        title: const Text(
+          'Expenses',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: Row(
-                  children: [
-                    // Filter button
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            "Filter",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Export button
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Text(
-                                "Assign to",
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              Icon(Icons.arrow_drop_down,
-                                  size: 18, color: Colors.grey),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+        ),
+        // backgroundColor: Colors.deepPurple,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () {
+              // TODO: Implement add expense functionality
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        // decoration: const BoxDecoration(
+        //   gradient: LinearGradient(
+        //     colors: [
+        //       Color(0xFF6A11CB),
+        //       Color(0xFF2575FC),
+        //     ],
+        //     begin: Alignment.topLeft,
+        //     end: Alignment.bottomRight,
+        //   ),
+        // ),
+        child: Column(
+          children: [
+            _buildFilterSection(controller),
+            Expanded(
+              child: _buildExpenseList(controller),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterSection(ExpenseController controller) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _filterChip(controller, 'All'),
+          _filterChip(controller, 'Pending'),
+          _filterChip(controller, 'Approved'),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(ExpenseController controller, String status) {
+    return Obx(() => ChoiceChip(
+          label: Text(status),
+          selected: controller.filterStatus.value == status,
+          onSelected: (_) => controller.changeFilter(status),
+          selectedColor: Colors.white,
+          backgroundColor: Colors.white24,
+          labelStyle: TextStyle(
+            color: controller.filterStatus.value == status
+                ? Colors.deepPurple
+                : Colors.grey,
+          ),
+        ));
+  }
+
+  Widget _buildExpenseList(ExpenseController controller) {
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: controller.filteredExpenses.length,
+        itemBuilder: (context, index) {
+          final expense = controller.filteredExpenses[index];
+          return _expenseCard(expense, context);
+        },
+      );
+    });
+  }
+
+  Widget _expenseCard(Expense expense, BuildContext context) {
+    return Card(
+      elevation: 8,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: InkWell(
+        onTap: () {
+          // Navigate to Expense Details Page
+          Get.to(() => ExpenseDetailsPage());
+        },
+        borderRadius: BorderRadius.circular(15),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white,
+                  Colors.grey.shade100,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  itemCount: 20, // Generate 20 cards
-                  itemBuilder: (context, index) {
-                    return customExpenseCard();
-                  },
-                ),
-              ),
-            ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _cardHeader(expense),
+                _cardBody(expense),
+                _cardFooter(expense, context),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget customExpenseCard() {
+  Widget _cardHeader(Expense expense) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: InkWell(
-        onTap: () {
-          Get.to(Expensedetails());
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.shade100,
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.blue.shade200,
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            expense.name,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              // Row for Name and Date
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Name
-                    Text(
-                      "Muskan Shaikh",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    // Date with Icon
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          color: Colors.orange,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "19/12/2025",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              const Icon(
+                Icons.calendar_today,
+                color: Colors.deepOrange,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                DateFormat('dd/MM/yyyy').format(expense.date),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black54,
                 ),
               ),
-              const SizedBox(height: 8),
-              // Address
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "RoyalPlam, Goregaon east, 400065\nMumbai, Maharashtra",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Row for Amount and Arrow
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Amount with Icon
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.currency_rupee,
-                          color: Colors.blue.shade600,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "2056",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade600,
-                          ),
-                        ),
-                        // Arrow Icon
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: Colors.orange.shade100,
-                          child: Icon(
-                            Icons.arrow_forward,
-                            color: Colors.orange,
-                            size: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.end,
-              //   children: [
-              //     Container(
-              //       width: Get.size.width * .38,
-              //       height: Get.size.height * .05,
-              //       decoration: BoxDecoration(
-              //           boxShadow: [
-              //             BoxShadow(
-              //               color: Colors.black26,
-              //               blurRadius: 8,
-              //               offset: Offset(0, 4),
-              //             ),
-              //           ],
-              //           color: Colors.orange,
-              //           borderRadius: BorderRadius.only(
-              //               topLeft: Radius.circular(15),
-              //               bottomRight: Radius.circular(12))),
-              //       child: Padding(
-              //         padding: const EdgeInsets.only(left: 28.0),
-              //         child: Row(
-              //           children: [
-              //             Icon(
-              //               Icons.attachment,
-              //               color: Colors.white,
-              //             ),
-              //             SizedBox(
-              //               width: 10,
-              //             ),
-              //             Center(
-              //                 child: Text(
-              //               "Attachments",
-              //               style: TextStyle(color: Colors.white),
-              //             ))
-              //           ],
-              //         ),
-              //       ),
-              //     ),
-              //   ],
-              // )
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cardBody(Expense expense) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+      child: Text(
+        expense.address,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey.shade700,
         ),
+      ),
+    );
+  }
+
+  Widget _cardFooter(Expense expense, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.currency_rupee,
+                color: Colors.deepPurple,
+                size: 18,
+              ),
+              Text(
+                expense.amount.toStringAsFixed(2),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: expense.status == 'Approved'
+                  ? Colors.green.shade100
+                  : Colors.orange.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              expense.status,
+              style: TextStyle(
+                color: expense.status == 'Approved'
+                    ? Colors.green.shade800
+                    : Colors.orange.shade800,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

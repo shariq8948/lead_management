@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../utils/constants.dart';
+import 'custom_loader.dart';
 
 enum ButtonTypes {
   outline,
@@ -122,38 +123,38 @@ class CustomButton extends StatelessWidget {
               icon!,
               text != null
                   ? Padding(
-                padding: const EdgeInsets.only(
-                  left: 12,
-                ),
-                child: Text(
-                  text!,
-                  style: TextStyle(
-                    color: getForegroundColorFromType(),
-                    fontSize: getFontSize(),
-                    fontFamily: "JosefinSans",
-                  ),
-                ),
-              )
+                      padding: const EdgeInsets.only(
+                        left: 12,
+                      ),
+                      child: Text(
+                        text!,
+                        style: TextStyle(
+                          color: getForegroundColorFromType(),
+                          fontSize: getFontSize(),
+                          fontFamily: "JosefinSans",
+                        ),
+                      ),
+                    )
                   : const SizedBox.shrink(),
             ],
           );
         } else {
           return text != null
               ? Text(
-            text!,
-            style: TextStyle(
-              color: getForegroundColorFromType(),
-              fontSize: getFontSize(),
-              fontFamily: "JosefinSans",
-            ),
-          )
+                  text!,
+                  style: TextStyle(
+                    color: getForegroundColorFromType(),
+                    fontSize: getFontSize(),
+                    fontFamily: "JosefinSans",
+                  ),
+                )
               : const SizedBox.shrink();
         }
       } else {
         return SizedBox(
           width: getFontSize() + 3,
           height: getFontSize() + 3,
-          child: CircularProgressIndicator(color: getForegroundColorFromType()),
+          child: CustomLoader(),
         );
       }
     }
@@ -164,13 +165,13 @@ class CustomButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(width / 2),
         boxShadow: buttonType == ButtonTypes.primary
             ? [
-          BoxShadow(
-            color: buttonBgColor.withOpacity(0.6),
-            spreadRadius: 4,
-            blurRadius: 8,
-            offset: const Offset(0, 0),
-          )
-        ]
+                BoxShadow(
+                  color: buttonBgColor.withOpacity(0.6),
+                  spreadRadius: 4,
+                  blurRadius: 8,
+                  offset: const Offset(0, 0),
+                )
+              ]
             : [],
       ),
       child: MaterialButton(
@@ -187,20 +188,20 @@ class CustomButton extends StatelessWidget {
             color: enabled && !loading
                 ? getBackgroundColorFromType()
                 : (buttonType == ButtonTypes.outline)
-                ? Colors.transparent
-                : getBackgroundColorFromType().withOpacity(0.6),
+                    ? Colors.transparent
+                    : getBackgroundColorFromType().withOpacity(0.6),
             borderRadius: BorderRadius.circular(width / 2),
             border: borderColor != null
                 ? Border.all(
-              width: 1,
-              color: enabled && !loading
-                  ? borderColor!
-                  : borderColor!.withOpacity(0.7),
-            )
+                    width: 1,
+                    color: enabled && !loading
+                        ? borderColor!
+                        : borderColor!.withOpacity(0.7),
+                  )
                 : Border.all(
-              width: 1,
-              color: Colors.transparent,
-            ),
+                    width: 1,
+                    color: Colors.transparent,
+                  ),
           ),
           child: Container(
             constraints: BoxConstraints(

@@ -13,7 +13,7 @@ class _MapsPageState extends State<MapsPage> {
   final Map<String, LatLng> _locations = {
     'Location A': LatLng(37.7749, -122.4194), // San Francisco
     'Location B': LatLng(34.0522, -118.2437), // Los Angeles
-    'Location C': LatLng(40.7128, -74.0060),  // New York
+    'Location C': LatLng(40.7128, -74.0060), // New York
   };
 
   // Marker list
@@ -28,7 +28,8 @@ class _MapsPageState extends State<MapsPage> {
         markerId: MarkerId(entry.key),
         position: entry.value,
         infoWindow: InfoWindow(title: entry.key),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue), // Highlight color
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueBlue), // Highlight color
       );
     }).toSet();
   }
@@ -47,7 +48,8 @@ class _MapsPageState extends State<MapsPage> {
       body: GoogleMap(
         onMapCreated: _onMapCreated,
         initialCameraPosition: CameraPosition(
-          target: LatLng(37.7749, -122.4194), // Center the map on the first location
+          target: LatLng(
+              37.7749, -122.4194), // Center the map on the first location
           zoom: 4.0,
         ),
         markers: _markers,

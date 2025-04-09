@@ -1,0 +1,1786 @@
+// import 'dart:convert';
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:image_picker/image_picker.dart';
+// import 'package:intl/intl.dart';
+// import 'package:leads/utils/constants.dart';
+// import 'package:leads/widgets/custom_button.dart';
+// import '../../data/models/QuotationFollowUpModel.dart';
+// import '../../widgets/custom_date_picker.dart';
+// import '../../widgets/custom_field.dart';
+// import '../../widgets/custom_loader.dart';
+// import '../../widgets/custom_select.dart';
+// import '../../widgets/pdf_view.dart';
+// import 'followupController.dart';
+//
+// class QuotationFollowUpPage extends StatefulWidget {
+//   @override
+//   State<QuotationFollowUpPage> createState() => _QuotationFollowUpPageState();
+// }
+//
+// class _QuotationFollowUpPageState extends State<QuotationFollowUpPage> {
+//   final QuotationFollowUp controller = Get.put(QuotationFollowUp());
+//   final ScrollController _scrollController = ScrollController();
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Set current date by default
+//     controller.DateCtlr.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+//     controller.Date.value = controller.DateCtlr.text;
+//     controller.fetchQuotations(isInitialFetch: true);
+//     _scrollController.addListener(_scrollListener);
+//   }
+//
+//   void _scrollListener() {
+//     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 50 &&
+//         controller.hasMoreLeads.value &&
+//         !controller.isFetchingMore.value) {
+//       controller.fetchQuotations();
+//     }
+//   }
+//
+//   @override
+//   void dispose() {
+//     _scrollController.dispose();
+//     super.dispose();
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: Colors.grey[100],
+//       appBar: _buildAppBar(),
+//       body: _buildBody(),
+//     );
+//   }
+//
+//   PreferredSizeWidget _buildAppBar() {
+//     return AppBar(
+//       elevation: 0,
+//       backgroundColor: Colors.white,
+//       title: const Text(
+//         "Quotation Follow Up",
+//         style: TextStyle(
+//           color: Colors.black87,
+//           fontWeight: FontWeight.w600,
+//         ),
+//       ),
+//       actions: [
+//         IconButton(
+//           icon: Icon(Icons.filter_list, color: Colors.blue[700]),
+//           onPressed: () => _showFilterBottomSheet(),
+//         ),
+//         IconButton(
+//           icon: Icon(Icons.file_download, color: Colors.blue[700]),
+//           onPressed: () => _exportData(),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   Widget _buildBody() {
+//     return Column(
+//       children: [
+//         _buildSearchBar(),
+//         Expanded(
+//           child: Obx(() {
+//             if (controller.isLoading.value && controller.quotationList.isEmpty) {
+//               return const Center(child: CustomLoader());
+//             }
+//
+//             return RefreshIndicator(
+//               onRefresh: () async {
+//                 await controller.fetchQuotations(isInitialFetch: true);
+//               },
+//               child: ListView.builder(
+//                 controller: _scrollController,
+//                 padding: const EdgeInsets.all(16),
+//                 itemCount: controller.hasMoreLeads.value
+//                     ? controller.quotationList.length + 1
+//                     : controller.quotationList.length,
+//                 itemBuilder: (context, index) {
+//                   if (index < controller.quotationList.length) {
+//                     final quotation = controller.quotationList[index];
+//                     return _buildQuotationCard(quotation);
+//                   } else {
+//                     return const Padding(
+//                       padding: EdgeInsets.all(16.0),
+//                       child: Center(child: CustomLoader()),
+//                     );
+//                   }
+//                 },
+//               ),
+//             );
+//           }),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   Widget _buildSearchBar() {
+//     return Container(
+//       padding: const EdgeInsets.all(16),
+//       color: Colors.white,
+//       child: TextField(
+//         decoration: InputDecoration(
+//           hintText: 'Search quotations...',
+//           prefixIcon: const Icon(Icons.search, color: Colors.grey),
+//           filled: true,
+//           fillColor: Colors.grey[100],
+//           border: OutlineInputBorder(
+//             borderRadius: BorderRadius.circular(12),
+//             borderSide: BorderSide.none,
+//           ),
+//           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//         ),
+//         onChanged: (value) {
+//           // Implement search functionality
+//         },
+//       ),
+//     );
+//   }
+//
+//   Widget _buildQuotationCard(QuotationFollowUpModel quotation) {
+//     return Card(
+//       margin: const EdgeInsets.only(bottom: 16),
+//       elevation: 2,
+//       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//       child: Container(
+//         decoration: BoxDecoration(
+//           borderRadius: BorderRadius.circular(16),
+//           border: Border(
+//             left: BorderSide(
+//               color: Colors.tealAccent,
+//               width: 4,
+//             ),
+//           ),
+//         ),
+//         child: Padding(
+//           padding: const EdgeInsets.all(16),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Row(
+//                 children: [
+//                   Expanded(
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Text(
+//                           quotation.custName ?? "Unknown",
+//                           style: const TextStyle(
+//                             fontSize: 18,
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                         const SizedBox(height: 4),
+//                         Text(
+//                           "ID: ${quotation.id}",
+//                           style: TextStyle(
+//                             color: Colors.grey[600],
+//                             fontSize: 14,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//               const SizedBox(height: 16),
+//               _buildInfoRow(
+//                 Icons.calendar_today,
+//                 "Date",
+//                 quotation.quotDate ?? "N/A",
+//               ),
+//               const SizedBox(height: 8),
+//               _buildInfoRow(
+//                 Icons.phone,
+//                 "Contact",
+//                 quotation.custMobile ?? "N/A",
+//               ),
+//               const SizedBox(height: 8),
+//               _buildInfoRow(
+//                 Icons.location_on,
+//                 "Address",
+//                 quotation.custAddress ?? "N/A",
+//               ),
+//               const SizedBox(height: 16),
+//               Row(
+//                 children: [
+//                   Text(
+//                     "₹${NumberFormat("#,##,###").format(double.parse(quotation.bAmt ?? "0"))}",
+//                     style: const TextStyle(
+//                       fontSize: 20,
+//                       fontWeight: FontWeight.bold,
+//                       color: Colors.green,
+//                     ),
+//                   ),
+//                   const Spacer(),
+//                   _buildActionButton(
+//                     "Follow Up",
+//                     Icons.edit_calendar,
+//                     Colors.blue,
+//                         () => _showFollowUpDialog(quotation.id ?? "0"),
+//                   ),
+//                   const SizedBox(width: 8),
+//                   _buildActionButton(
+//                     "More",
+//                     Icons.more_vert,
+//                     Colors.grey,
+//                         () => _showMoreOptions(quotation),
+//                   ),
+//                 ],
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildInfoRow(IconData icon, String label, String value) {
+//     return Row(
+//       children: [
+//         Icon(icon, size: 16, color: Colors.grey[600]),
+//         const SizedBox(width: 8),
+//         Text(
+//           "$label: ",
+//           style: TextStyle(
+//             color: Colors.grey[600],
+//             fontSize: 14,
+//           ),
+//         ),
+//         Expanded(
+//           child: Text(
+//             value,
+//             style: const TextStyle(
+//               fontSize: 14,
+//               fontWeight: FontWeight.w500,
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   Widget _buildActionButton(
+//       String label,
+//       IconData icon,
+//       Color color,
+//       VoidCallback onPressed,
+//       ) {
+//     return ElevatedButton.icon(
+//       onPressed: onPressed,
+//       style: ElevatedButton.styleFrom(
+//         backgroundColor: color,
+//         foregroundColor: Colors.white,
+//         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//         shape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(8),
+//         ),
+//       ),
+//       icon: Icon(icon, size: 16),
+//       label: Text(label),
+//     );
+//   }
+//
+//
+//   Color _getStatusColor(String status) {
+//     switch (status.toLowerCase()) {
+//       case 'approved':
+//         return Colors.green;
+//       case 'pending':
+//         return Colors.orange;
+//       case 'rejected':
+//         return Colors.red;
+//       default:
+//         return Colors.blue;
+//     }
+//   }
+//
+//   void _showFollowUpDialog(String id) {
+//     showDialog(
+//       context: context,
+//       builder: (context) => Dialog(
+//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//         child: _buildFollowUpForm(id),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildFollowUpForm(String id) {
+//     return Container(
+//       padding: const EdgeInsets.all(24),
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           const Text(
+//             "Add Follow Up",
+//             style: TextStyle(
+//               fontSize: 24,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           const SizedBox(height: 24),
+//           _buildFormFields(id),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildFormFields(String id) {
+//     return Obx(() {
+//       if (controller.isLoading.value) {
+//         return const Center(child: CircularProgressIndicator());
+//       }
+//       return Column(
+//         children: [
+//           CustomField(
+//             withShadow: true,
+//             labelText: "Date",
+//             hintText: "Select date",
+//             inputAction: TextInputAction.done,
+//             inputType: TextInputType.datetime,
+//             showLabel: true,
+//             bgColor: Colors.white,
+//             enabled: true,
+//             readOnly: true,
+//             editingController: controller.DateCtlr,
+//             onFieldTap: () {
+//               Get.bottomSheet(
+//                 CustomDatePicker(
+//                   pastAllow: true,
+//                   confirmHandler: (date) {
+//                     controller.DateCtlr.text = date ?? "";
+//                     controller.Date.value = date ?? "";
+//                   },
+//                 ),
+//               );
+//             },
+//           ),
+//           const SizedBox(height: 16),
+//           CustomField(
+//             editingController: controller.conversationWithController,
+//             hintText: "Conversation With",
+//             labelText: "Conversation with",
+//             inputType: TextInputType.text,
+//             inputAction: TextInputAction.next,
+//           ),
+//           const SizedBox(height: 16),
+//           CustomField(
+//             editingController: controller.followUpByController,
+//             hintText: "Follow Up By",
+//             labelText: "Follow Up By",
+//             inputType: TextInputType.text,
+//             inputAction: TextInputAction.next,
+//           ),
+//           const SizedBox(height: 16),
+//           CustomSelect(
+//             label: "Status",
+//             placeholder: "Select Status",
+//             mainList: controller.status
+//                 .map((element) => CustomSelectItem(
+//               id: element!.id ?? "",
+//               value: element.status ?? "",
+//             ))
+//                 .toList(),
+//             onSelect: (val) {
+//               controller.followUpStatusController.text = val.id;
+//               controller.showfollowUpStatusController.text = val.value;
+//             },
+//             textEditCtlr: controller.showfollowUpStatusController,
+//             showLabel: true,
+//           ),
+//           const SizedBox(height: 16),
+//           CustomField(
+//             editingController: controller.remarkcontroller,
+//             hintText: "Enter Remarks",
+//             labelText: "Remarks",
+//             inputType: TextInputType.multiline,
+//             inputAction: TextInputAction.newline,
+//             minLines: 3,
+//           ),
+//           const SizedBox(height: 24),
+//           SizedBox(
+//             width: double.infinity,
+//             child: ElevatedButton(
+//               onPressed: () => controller.addFollowUp(id),
+//               style: ElevatedButton.styleFrom(
+//                 backgroundColor: Colors.blue,
+//                 padding: const EdgeInsets.symmetric(vertical: 16),
+//                 shape: RoundedRectangleBorder(
+//                   borderRadius: BorderRadius.circular(8),
+//                 ),
+//               ),
+//               child: const Text(
+//                 "Save Follow Up",
+//                 style: TextStyle(
+//                   fontSize: 16,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ],
+//       );
+//     });
+//   }
+//
+//   void _showMoreOptions(QuotationFollowUpModel quotation) {
+//     showModalBottomSheet(
+//       context: context,
+//       shape: const RoundedRectangleBorder(
+//         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+//       ),
+//       builder: (context) => _buildMoreOptionsSheet(quotation),
+//     );
+//   }
+//
+//   Widget _buildMoreOptionsSheet(QuotationFollowUpModel quotation) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(vertical: 24),
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           _buildOptionTile(
+//             "View Details",
+//             Icons.visibility,
+//                 () {
+//               Navigator.pop(context);
+//               // Implement view details
+//             },
+//           ),
+//           _buildOptionTile(
+//             "Edit Quotation",
+//             Icons.edit,
+//                 () {
+//               Navigator.pop(context);
+//               // Implement edit
+//             },
+//           ),
+//           _buildOptionTile(
+//             "Attachments",
+//             Icons.attach_file,
+//                 () {
+//               Navigator.pop(context);
+//               buildAttachmentsDialog(context);
+//             },
+//           ),
+//           _buildOptionTile(
+//             "Export PDF",
+//             Icons.picture_as_pdf,
+//                 () {
+//               Navigator.pop(context);
+//               // Implement PDF export
+//             },
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildOptionTile(String title, IconData icon, VoidCallback onTap) {
+//     return ListTile(
+//       leading: Icon(icon, color: Colors.blue[700]),
+//       title: Text(
+//         title,
+//         style: const TextStyle(
+//           fontSize: 16,
+//           fontWeight: FontWeight.w500,
+//         ),
+//       ),
+//       onTap: onTap,
+//     );
+//   }
+//
+//   void _showFilterBottomSheet() {
+//     showModalBottomSheet(
+//       context: context,
+//       isScrollControlled: true,
+//       shape: const RoundedRectangleBorder(
+//         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+//       ),
+//       builder: (context) => _buildFilterSheet(),
+//     );
+//   }
+//
+//   Widget _buildFilterSheet() {
+//     return Container(
+//       padding: const EdgeInsets.all(24),
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           const Text(
+//             "Filter Quotations",
+//             style: TextStyle(
+//               fontSize: 20,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           const SizedBox(height: 24),
+//           CustomField(
+//             labelText: "Date Range",
+//             hintText: "Select date range",
+//             inputAction: TextInputAction.done,
+//             inputType: TextInputType.datetime,
+//             showLabel: true,
+//             readOnly: true,
+//             onFieldTap: () {
+//               // Implement date range picker
+//             },
+//           ),
+//           const SizedBox(height: 16),
+//           CustomSelect(
+//             label: "Status",
+//             placeholder: "Select Status",
+//             mainList: controller.status
+//                 .map((element) => CustomSelectItem(
+//               id: element!.id ?? "",
+//               value: element.status ?? "",
+//             ))
+//                 .toList(),
+//             onSelect: (val) {
+//               // Implement status filter
+//             },
+//             showLabel: true, textEditCtlr: controller.followUpStatusController,
+//           ),
+//           const SizedBox(height: 16),
+//           CustomField(
+//             labelText: "Amount Range",
+//             hintText: "Enter amount range",
+//             inputAction: TextInputAction.done,
+//             inputType: TextInputType.number,
+//             showLabel: true,
+//           ),
+//           const SizedBox(height: 24),
+//           Row(
+//             children: [
+//               Expanded(
+//                 child: OutlinedButton(
+//                   onPressed: () {
+//                     Navigator.pop(context);
+//                   },
+//                   style: OutlinedButton.styleFrom(
+//                     padding: const EdgeInsets.symmetric(vertical: 16),
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(8),
+//                     ),
+//                   ),
+//                   child: const Text("Reset"),
+//                 ),
+//               ),
+//               const SizedBox(width: 16),
+//               Expanded(
+//                 child: ElevatedButton(
+//                   onPressed: () {
+//                     // Implement filter application
+//                     Navigator.pop(context);
+//                   },
+//                   style: ElevatedButton.styleFrom(
+//                     backgroundColor: Colors.blue,
+//                     padding: const EdgeInsets.symmetric(vertical: 16),
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(8),
+//                     ),
+//                   ),
+//                   child: const Text("Apply"),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   void _exportData() {
+//     showModalBottomSheet(
+//       context: context,
+//       shape: const RoundedRectangleBorder(
+//         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+//       ),
+//       builder: (context) => _buildExportSheet(),
+//     );
+//   }
+//
+//   Widget _buildExportSheet() {
+//     return Container(
+//       padding: const EdgeInsets.all(24),
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           _buildExportOption(
+//             "Export as PDF",
+//             Icons.picture_as_pdf,
+//                 () {
+//               // Implement PDF export
+//               Navigator.pop(context);
+//             },
+//           ),
+//           _buildExportOption(
+//             "Export as Excel",
+//             Icons.table_chart,
+//                 () {
+//               // Implement Excel export
+//               Navigator.pop(context);
+//             },
+//           ),
+//           _buildExportOption(
+//             "Share Report",
+//             Icons.share,
+//                 () {
+//               // Implement sharing
+//               Navigator.pop(context);
+//             },
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   Widget _buildExportOption(String title, IconData icon, VoidCallback onTap) {
+//     return ListTile(
+//       leading: Icon(icon, color: Colors.blue[700]),
+//       title: Text(
+//         title,
+//         style: const TextStyle(
+//           fontSize: 16,
+//           fontWeight: FontWeight.w500,
+//         ),
+//       ),
+//       onTap: onTap,
+//     );
+//   }
+//
+//   Future buildAttachmentsDialog(BuildContext context) {
+//     return Get.bottomSheet(
+//       Container(
+//         width: double.infinity,
+//         decoration: BoxDecoration(
+//           color: Colors.white,
+//           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+//           boxShadow: [
+//             BoxShadow(
+//               color: Colors.black.withOpacity(0.1),
+//               blurRadius: 8,
+//               offset: const Offset(0, -4),
+//             ),
+//           ],
+//         ),
+//         child: SingleChildScrollView(
+//           padding: const EdgeInsets.all(24),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               Row(
+//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                 children: [
+//                   const Text(
+//                     "Attachments",
+//                     style: TextStyle(
+//                       fontSize: 20,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                   IconButton(
+//                     onPressed: () => Get.back(),
+//                     icon: const Icon(Icons.close),
+//                   ),
+//                 ],
+//               ),
+//               const SizedBox(height: 24),
+//               CustomField(
+//                 hintText: "Document Name",
+//                 labelText: "Document Name",
+//                 inputAction: TextInputAction.done,
+//                 inputType: TextInputType.text,
+//                 editingController: controller.documentController,
+//               ),
+//               const SizedBox(height: 16),
+//               _buildAttachmentButton(),
+//               const SizedBox(height: 24),
+//               _buildAttachmentsList(),
+//               const SizedBox(height: 24),
+//               SizedBox(
+//                 width: double.infinity,
+//                 child: ElevatedButton(
+//                   onPressed: () {
+//                     // Implement save attachments
+//                     print(controller.documentController.text);
+//                     print(controller.bannerImageBase64);
+//                     Get.back();
+//                   },
+//                   style: ElevatedButton.styleFrom(
+//                     backgroundColor: Colors.blue,
+//                     padding: const EdgeInsets.symmetric(vertical: 16),
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(8),
+//                     ),
+//                   ),
+//                   child: Text(
+//                     controller.isEdit.value ? "Update" : "Save",
+//                     style: const TextStyle(
+//                       fontSize: 16,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildAttachmentButton() {
+//     return Obx(() => OutlinedButton(
+//       style: OutlinedButton.styleFrom(
+//         side: const BorderSide(color: Colors.blue),
+//         shape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(8),
+//         ),
+//         padding: const EdgeInsets.symmetric(vertical: 16),
+//       ),
+//       onPressed: () => controller.pickImage(
+//         ImageSource.gallery,
+//         controller.bannerImageBase64,
+//       ),
+//       child: controller.bannerImageBase64.isEmpty
+//           ? Row(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: const [
+//           Icon(Icons.attach_file, color: Colors.blue),
+//           SizedBox(width: 8),
+//           Text(
+//             "Attach File",
+//             style: TextStyle(
+//               color: Colors.blue,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//         ],
+//       )
+//           : Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           _buildImagePreview(controller.bannerImageBase64.value),
+//           TextButton.icon(
+//             onPressed: () => controller.bannerImageBase64.value = "",
+//             icon: const Icon(Icons.close, color: Colors.red),
+//             label: const Text(
+//               "Remove",
+//               style: TextStyle(color: Colors.red),
+//             ),
+//           ),
+//         ],
+//       ),
+//     ));
+//   }
+//
+//   Widget _buildAttachmentsList() {
+//     return Obx(() => ListView.builder(
+//       shrinkWrap: true,
+//       physics: const NeverScrollableScrollPhysics(),
+//       itemCount: controller.attachments.length,
+//       itemBuilder: (context, index) {
+//         final attachment = controller.attachments[index];
+//         return Card(
+//           margin: const EdgeInsets.only(bottom: 8),
+//           shape: RoundedRectangleBorder(
+//             borderRadius: BorderRadius.circular(8),
+//           ),
+//           child: ListTile(
+//             leading: Container(
+//               width: 48,
+//               height: 48,
+//               decoration: BoxDecoration(
+//                 color: Colors.grey[100],
+//                 borderRadius: BorderRadius.circular(8),
+//               ),
+//               child: attachment['image'] != null
+//                   ? ClipRRect(
+//                 borderRadius: BorderRadius.circular(8),
+//                 child: Image.asset(
+//                   attachment['image']!,
+//                   fit: BoxFit.cover,
+//                 ),
+//               )
+//                   : const Icon(Icons.insert_drive_file),
+//             ),
+//             title: Text(
+//               attachment['name']!,
+//               style: const TextStyle(fontWeight: FontWeight.w500),
+//             ),
+//             trailing: PopupMenuButton<String>(
+//               icon: const Icon(Icons.more_vert),
+//               onSelected: (value) {
+//                 if (value == 'Edit') {
+//                   controller.isEdit.value = true;
+//                   controller.bannerImageBase64.value =
+//                       attachment['image'] ?? "";
+//                   controller.documentController.text = attachment['name']!;
+//                 } else if (value == 'Delete') {
+//                   controller.attachments.removeAt(index);
+//                 }
+//               },
+//               itemBuilder: (context) => [
+//                 const PopupMenuItem(
+//                   value: 'Edit',
+//                   child: Text('Edit'),
+//                 ),
+//                 const PopupMenuItem(
+//                   value: 'Delete',
+//                   child: Text('Delete'),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         );
+//       },
+//     ));
+//   }
+//
+//   Widget _buildImagePreview(String imageSource) {
+//     if (imageSource.startsWith('http')) {
+//       return ClipRRect(
+//         borderRadius: BorderRadius.circular(8),
+//         child: Image.network(
+//           imageSource,
+//           height: 100,
+//           width: double.infinity,
+//           fit: BoxFit.cover,
+//           errorBuilder: (context, error, stackTrace) {
+//             return const Center(
+//               child: Icon(Icons.broken_image, color: Colors.red, size: 50),
+//             );
+//           },
+//         ),
+//       );
+//     } else {
+//       try {
+//         final bytes = base64Decode(imageSource.split(',').last);
+//         return ClipRRect(
+//           borderRadius: BorderRadius.circular(8),
+//           child: Image.memory(
+//             bytes,
+//             height: 100,
+//             width: double.infinity,
+//             fit: BoxFit.cover,
+//             errorBuilder: (context, error, stackTrace) {
+//               return const Center(
+//                 child: Icon(Icons.broken_image, color: Colors.red, size: 50),
+//               );
+//             },
+//           ),
+//         );
+//       } catch (e) {
+//         return const Center(
+//           child: Icon(Icons.broken_image, color: Colors.red, size: 50),
+//         );
+//       }
+//     }
+//   }
+// }
+
+
+
+
+
+
+
+
+
+another page
+
+
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:leads/utils/constants.dart';
+import 'package:leads/widgets/custom_button.dart';
+import '../../widgets/custom_date_picker.dart';
+import '../../widgets/custom_field.dart';
+import '../../widgets/custom_loader.dart';
+import '../../widgets/custom_select.dart';
+import '../../widgets/pdf_view.dart';
+import 'followupController.dart';
+
+class QuotationFollowUpPage extends StatefulWidget {
+  @override
+  State<QuotationFollowUpPage> createState() => _QuotationFollowUpPageState();
+}
+
+class _QuotationFollowUpPageState extends State<QuotationFollowUpPage> {
+  final QuotationFollowUp controller = Get.put(QuotationFollowUp());
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    controller.fetchQuotations(isInitialFetch: true);
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 50 &&
+        controller.hasMoreLeads.value &&
+        !controller.isFetchingMore.value) {
+      controller.fetchQuotations();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: Column(
+        children: [
+          _buildHeaderSection(),
+          Expanded(
+            child: Obx(() {
+              if (controller.isLoading.value &&
+                  controller.quotationList.isEmpty) {
+                return const Center(child: CustomLoader());
+              }
+              return _buildQuotationList();
+            }),
+          ),
+        ],
+      ),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      title: const Text(
+        "Quotation List",
+        style: TextStyle(
+          color: Colors.black87,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.black87),
+          onPressed: () {
+            // Implement search functionality
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildFilterButton(),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildExportButton(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Implement filter functionality
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.filter_list, color: Colors.grey.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Filter',
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Implement export functionality
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.download, color: Colors.grey.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Export',
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuotationList() {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await controller.fetchQuotations(isInitialFetch: true);
+      },
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: controller.hasMoreLeads.value
+            ? controller.quotationList.length + 1
+            : controller.quotationList.length,
+        itemBuilder: (context, index) {
+          if (index < controller.quotationList.length) {
+            final quotation = controller.quotationList[index];
+            return _buildQuotationCard(quotation);
+          } else {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CustomLoader(),
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuotationCard(dynamic quotation) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              // Handle card tap
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCardHeader(quotation),
+                _buildCardBody(quotation),
+                _buildCardActions(quotation),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardHeader(dynamic quotation) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade100),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  quotation.custName ?? "Unknown",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today,
+                        size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      quotation.quotDate ?? "No Date",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '₹${quotation.bAmt ?? "0"}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Active',
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardBody(dynamic quotation) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  quotation.custAddress ?? "No Address",
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Text(
+                quotation.custMobile ?? "N/A",
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardActions(dynamic quotation) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade100),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextButton.icon(
+              onPressed: () {
+                // Handle call action
+              },
+              icon: const Icon(Icons.call, size: 18),
+              label: const Text('Call'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                _showFollowUpDialog(quotation.id ?? "0");
+              },
+              icon: const Icon(Icons.update, size: 18),
+              label: const Text('Follow Up'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildMoreOptionsButton(quotation),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoreOptionsButton(dynamic quotation) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Colors.grey),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (context) => [
+        _buildPopupMenuItem('View', Icons.visibility),
+        _buildPopupMenuItem('Edit', Icons.edit),
+        _buildPopupMenuItem('Attachments', Icons.attach_file),
+        _buildPopupMenuItem('Export', Icons.download),
+        _buildPopupMenuItem('Sample', Icons.science),
+        _buildPopupMenuItem('Revise', Icons.refresh),
+      ],
+      onSelected: (value) {
+        // Handle menu item selection
+      },
+    );
+  }
+
+  PopupMenuItem<String> _buildPopupMenuItem(String text, IconData icon) {
+    return PopupMenuItem<String>(
+      value: text.toLowerCase(),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade700),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFollowUpDialog(String id) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: _buildFollowUpForm(id),
+      ),
+    );
+  }
+
+  Widget _buildFollowUpForm(String id) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Follow Up Details',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildDateField(),
+          const SizedBox(height: 16),
+          _buildConversationField(),
+          const SizedBox(height: 16),
+          _buildFollowUpByField(),
+          const SizedBox(height: 16),
+          _buildStatusField(),
+          const SizedBox(height: 16),
+          _buildRemarksField(),
+          const SizedBox(height: 24),
+          _buildSubmitButton(id),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateField() {
+    return CustomField(
+      withShadow: true,
+      labelText: "Date",
+      hintText: "Select date",
+      inputAction: TextInputAction.done,
+      inputType: TextInputType.datetime,
+      showLabel: false,
+      bgColor: Colors.white,
+      enabled: true,
+      readOnly: true,
+      editingController: controller.DateCtlr,
+      onFieldTap: () {
+        Get.bottomSheet(
+          CustomDatePicker(
+            pastAllow: true,
+            confirmHandler: (date) async {
+              controller.DateCtlr.text = date ?? "";
+              controller.Date.value = date ?? "";
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConversationField() {
+    return CustomField(
+      editingController: controller.conversationWithController,
+      hintText: "Conversation With",
+      labelText: "Conversation with",
+      inputType: TextInputType.text,
+      inputAction: TextInputAction.next,
+    );
+  }
+
+  Widget _buildFollowUpByField() {
+    return CustomField(
+      editingController: controller.followUpByController,
+      hintText: "Follow Up By",
+      labelText: "Follow Up By",
+      inputType: TextInputType.text,
+      inputAction: TextInputAction.next,
+    );
+  }
+
+  Widget _buildStatusField() {
+    return Obx(
+      () => CustomSelect(
+        label: "Status",
+        placeholder: "Select status",
+        mainList: controller.status
+            .map(
+              (element) => CustomSelectItem(
+                id: element!.id ?? "",
+                value: element?.status ?? "",
+              ),
+            )
+            .toList(),
+        onSelect: (val) {
+          controller.followUpStatusController.text = val.id;
+          controller.showfollowUpStatusController.text = val.value;
+        },
+        textEditCtlr: controller.showfollowUpStatusController,
+        showLabel: false,
+        onTapField: () {
+          controller.followUpStatusController.clear();
+          controller.showfollowUpStatusController.clear();
+        },
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a status';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildRemarksField() {
+    return CustomField(
+      editingController: controller.remarkcontroller,
+      hintText: "Enter Remarks",
+      labelText: "Remarks",
+      inputType: TextInputType.multiline,
+      inputAction: TextInputAction.newline,
+      minLines: 3,
+    );
+  }
+
+  Widget _buildSubmitButton(String id) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          controller.addFollowUp(id);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: const Text(
+          "Submit Follow Up",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: () {
+        // Add new quotation functionality
+      },
+      backgroundColor: Colors.blue,
+      child: const Icon(Icons.add),
+    );
+  }
+
+  Future<void> _showAttachmentsBottomSheet() async {
+    await Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Attachments',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.close),
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildAttachmentForm(),
+              const SizedBox(height: 24),
+              _buildAttachmentsList(),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildAttachmentForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomField(
+          hintText: "Document Name",
+          labelText: "Document Name",
+          inputAction: TextInputAction.done,
+          inputType: TextInputType.text,
+          editingController: controller.documentController,
+        ),
+        const SizedBox(height: 16),
+        Obx(
+          () => OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.blue),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+            ),
+            onPressed: () => controller.pickImage(
+              ImageSource.gallery,
+              controller.bannerImageBase64,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  controller.bannerImageBase64.isEmpty
+                      ? Icons.upload_file
+                      : Icons.check_circle,
+                  color: Colors.blue,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  controller.bannerImageBase64.isEmpty
+                      ? "Upload File"
+                      : "File Selected",
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (controller.bannerImageBase64.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: _buildImagePreview(controller.bannerImageBase64.value),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAttachmentsList() {
+    return Obx(
+      () => ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: controller.attachments.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final attachment = controller.attachments[index];
+          return _buildAttachmentItem(attachment, index);
+        },
+      ),
+    );
+  }
+
+  Widget _buildAttachmentItem(Map<String, String?> attachment, int index) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: attachment['image'] != null
+              ? Image.asset(
+                  attachment['image']!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.insert_drive_file,
+                      color: Colors.blue.shade700,
+                    );
+                  },
+                )
+              : Icon(
+                  Icons.insert_drive_file,
+                  color: Colors.blue.shade700,
+                ),
+        ),
+        title: Text(
+          attachment['name'] ?? '',
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onSelected: (value) {
+            if (value == 'edit') {
+              controller.isEdit.value = true;
+              controller.bannerImageBase64.value = attachment['image'] ?? "";
+              controller.documentController.text = attachment['name'] ?? "";
+            } else if (value == 'delete') {
+              controller.attachments.removeAt(index);
+            }
+          },
+          itemBuilder: (context) => [
+            _buildPopupMenuItem('Edit', Icons.edit),
+            _buildPopupMenuItem('Delete', Icons.delete),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePreview(String imageSource) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _buildImageWidget(imageSource),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              onPressed: () => controller.bannerImageBase64.value = "",
+              icon: const Icon(Icons.close),
+              color: Colors.red,
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.all(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(String imageSource) {
+    try {
+      if (imageSource.startsWith('http')) {
+        return Image.network(
+          imageSource,
+          fit: BoxFit.cover,
+          height: 200,
+          width: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildImageError();
+          },
+        );
+      } else {
+        final bytes = base64Decode(imageSource.split(',').last);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          height: 200,
+          width: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildImageError();
+          },
+        );
+      }
+    } catch (e) {
+      return _buildImageError();
+    }
+  }
+
+  Widget _buildImageError() {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      color: Colors.grey.shade100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.broken_image,
+            size: 48,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Failed to load image',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

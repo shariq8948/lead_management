@@ -231,13 +231,11 @@ class CustomerDetail {
     );
   }
 
-  // Method to convert object back to JSON
   Map<String, dynamic> toJson() {
     return {
       "id": id,
       "name": name,
       "city": city,
-      // Add other fields here
     };
   }
 }

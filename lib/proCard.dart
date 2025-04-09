@@ -13,14 +13,15 @@ class CustomProgressIndicator extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CustomProgressIndicatorState createState() => _CustomProgressIndicatorState();
+  _CustomProgressIndicatorState createState() =>
+      _CustomProgressIndicatorState();
 }
 
 class _CustomProgressIndicatorState extends State<CustomProgressIndicator> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showDetailsDialog(), // Interactive onTap
+      onTap: () => _showDetailsDialog(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -115,7 +116,7 @@ class _CustomProgressIndicatorState extends State<CustomProgressIndicator> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),  // This replaces Navigator.pop(context)
+            onPressed: () => Get.back(), // This replaces Navigator.pop(context)
             child: Text("Close", style: TextStyle(color: Colors.teal)),
           ),
         ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
 class CustomTaskCard extends StatelessWidget {
@@ -7,8 +7,8 @@ class CustomTaskCard extends StatelessWidget {
   final String date;
   final String assigneeName;
   final VoidCallback onNameTap;
-  final ValueChanged<bool?>? onCheckboxChanged; // Make this optional
-  final RxBool? isChecked; // Make this optional
+  final ValueChanged<bool?>? onCheckboxChanged; // Optional
+  final RxBool? isChecked; // Optional
 
   const CustomTaskCard({
     Key? key,
@@ -16,74 +16,80 @@ class CustomTaskCard extends StatelessWidget {
     required this.date,
     required this.assigneeName,
     required this.onNameTap,
-    this.onCheckboxChanged, // Mark as optional
-    this.isChecked, // Mark as optional
+    this.onCheckboxChanged,
+    this.isChecked,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 4,
-              spreadRadius: 1,
-              offset: Offset(0, 2),
+              color: Colors.grey.withOpacity(0.15),
+              blurRadius: 5,
+              spreadRadius: 2,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.transparent,
-                radius: 15,
-                child: SvgPicture.asset(
-                  _getBadgeIcon(taskType), // Path to your SVG file
-                  fit: BoxFit.contain,
-                  width: 20, // Adjust the size as needed
-                  height: 20,
-                ),
+            // Icon Badge
+            CircleAvatar(
+              backgroundColor: Colors.transparent,
+              radius: 18,
+              child: SvgPicture.asset(
+                _getBadgeIcon(taskType),
+                width: 24,
+                height: 24,
               ),
-            ),            SizedBox(width: 8),
+            ),
+            const SizedBox(width: 12),
+
+            // Date
             SizedBox(
               width: 80,
               child: Text(
                 date,
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            SizedBox(width: 8),
-            SizedBox(
-              width: 80,
+
+            const SizedBox(width: 12),
+
+            // Task Type
+            Expanded(
               child: Text(
                 taskType,
-                style: TextStyle(
-                  fontSize: 12,
+                style: const TextStyle(
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 3,
               ),
             ),
-            SizedBox(width: 8),
-            GestureDetector(
-              onTap: onNameTap,
-              child: Container(
-                constraints: BoxConstraints(maxWidth: 100),
+
+            const SizedBox(width: 12),
+
+            // Assignee Name
+            Expanded(
+              child: GestureDetector(
+                onTap: onNameTap,
                 child: Text(
                   assigneeName,
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: const TextStyle(
+                    fontSize: 13,
                     color: Colors.blue,
                     decoration: TextDecoration.underline,
                   ),
@@ -91,19 +97,19 @@ class CustomTaskCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Spacer(),
-            if (isChecked != null && onCheckboxChanged != null) // Conditional rendering
-              Obx(() => Expanded(
-                child: Checkbox(
-                  value: isChecked!.value, // Use non-null assertion here
-                  onChanged: onCheckboxChanged,
-                ),
-              )),
+
+            // Checkbox (only if required)
+            if (isChecked != null && onCheckboxChanged != null)
+              Obx(() => Checkbox(
+                    value: isChecked!.value,
+                    onChanged: onCheckboxChanged,
+                  )),
           ],
         ),
       ),
     );
   }
+
   String _getBadgeIcon(String type) {
     switch (type) {
       case 'CallActivity':
@@ -112,24 +118,10 @@ class CustomTaskCard extends StatelessWidget {
         return "assets/icons/followup.svg";
       case 'Meeting':
         return "assets/icons/meeting.svg";
-        case 'MyTodo':
-        return "assets/icons/meeting.svg";
+      case 'MyTodo':
+        return "assets/icons/todo.svg";
       default:
         return "assets/icons/todo.svg";
     }
   }
-  Color _getBadgeColor(String leadType) {
-    switch (leadType.toLowerCase()) {
-      case 'CallActivity':
-        return Colors.blue;
-      case 'FollowUp':
-        return Colors.orange;
-      case 'Meeting':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-
 }

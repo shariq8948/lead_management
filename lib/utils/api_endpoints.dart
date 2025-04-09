@@ -1,45 +1,89 @@
 class ApiEndpoints {
-  //Assigned Tasks
-  static const assignedTasks = "/TaskActivity/GetAssignTaskList";
-  static const funnelData = "/GetDashAllLeadwithStatusCount";
-  static const leadSource =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/ddlSources";
-  static const stateList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/ddlState";
-  static const productList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/Productlist";
-  static const cityList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/ddlLoadStateWiseCity";
-  static const areaList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/ddlArea";
-  static const saveCustomer =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/SaveCustomer";
-  static const customerList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/GetCustomer";
-  static const QuotationList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/Quotationlist";
-  static const updateCustomer =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/UpdateCustomer";
-  static const deleteCustomer =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/DeleteCustomer";
-  static const taskDetail =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/TaskDetails";
-  static const saveLead =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/SaveLead";
-  static const industryList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/ddlIndustry";
-  static const userRoles =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/ddlCRMUserslistRoleWise";
-  static const allProductsList =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/GetProductListSpeed";
-  static const taskHistory =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/GetTaskActivityHistoryList";
-  static const leadDetail =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/GetLead";
-  static const customerDetails =
-      "https://lead.mumbaicrm.com/api/PresalesMobile/GetCustomerById";
+  static const assignedTasks = "api/PresalesMobile/GetAssignTaskList";
+  static const funnelData = "api/PresalesMobile/AllCountList";
+  static const dashboardCount = "api/PresalesMobile/AllCountList";
+  static const leadSource = "api/PresalesMobile/ddlSources";
+  static const stateList = "api/PresalesMobile/ddlState";
+  static const productList = "api/PresalesMobile/Productlist";
+  static const cityList = "api/PresalesMobile/ddlLoadStateWiseCity";
+  static const areaList = "api/PresalesMobile/ddlArea";
+  static const saveCustomer = "api/PresalesMobile/SaveCustomer";
+  static const customerList = "api/PresalesMobile/GetCustomer";
+  static const leadList = "api/PresalesMobile/GetLeadsServerSide";
+  static const leaddashList = "api/PresalesMobile/GetDashLeadsList";
+  static const updateTaskActivity = "api/PresalesMobile/UpdateTaskActivity";
+  static const updateLeadActivity = "api/PresalesMobile/addtask";
+  static const prospectList = "api/PresalesMobile/ProspectList";
+  static const QuotationList = "api/PresalesMobile/Quotationlist";
+  static const updateCustomer = "api/PresalesMobile/UpdateCustomer";
+  static const deleteCustomer = "api/PresalesMobile/DeleteCustomer";
+  static const taskDetail = "api/PresalesMobile/TaskDetails";
+  static const saveLead = "api/PresalesMobile/SaveLead";
+  static const updateLead = "api/PresalesMobile/UpdateLead";
+  static const industryList = "api/PresalesMobile/ddlIndustry";
+  static const userRoles = "api/PresalesMobile/ddlCRMUserslistRoleWise";
+  static const allProductsList = "api/PresalesMobile/GetProductListSpeed";
+  static const taskHistory = "api/PresalesMobile/GetTaskActivityHistoryList";
+  static const leadDetail = "api/PresalesMobile/GetLead";
+  static const customerDetails = "api/PresalesMobile/GetCustomerById";
+  static const categoryList = "api/PresalesMobile/GetCategoryList";
+  static const mainCategory = "api/PresalesMobile/MainCategory";
+  static const addCategory = "api/PresalesMobile/PostCategory";
+  static const DeleteCategory = "api/PresalesMobile/DeleteCategory";
+  static const UpdateCategory = "api/PresalesMobile/PutCategory";
+  static const ProductDetail = "api/PresalesMobile/EditProduct";
+  static const CategoryDetail = "api/PresalesMobile/EditCategory";
+  static const Unitlist = "api/PresalesMobile/UnitList";
+  static const SaleGst = "api/PresalesMobile/SGSTList";
+  static const Purchasegst = "api/PresalesMobile/PGSTList";
+  static const HsnCode = "api/PresalesMobile/HSNList";
+  static const ComapnyName = "api/PresalesMobile/CompanyList";
+  static const AddProduct = "api/PresalesMobile/PostProduct";
+  static const UpdateProduct = "api/PresalesMobile/UpdateProduct";
+  static const AddPaymentMode = "api/PresalesMobile/AddModeOfPayment";
+  static const PaymentModes = "api/PresalesMobile/GetModeOfPayment";
+  static const PaymentType = "api/PresalesMobile/Paymenttype";
+  static const UpdatePaymentType = "api/PresalesMobile/UpdateModeOfPayment";
+  static const DeletePaymentType = "api/PresalesMobile/DeleteModeOfPayment";
+  static const DeleteProduct = "api/PresalesMobile/DeleteProduct";
+  static const UserTypes = "api/PresalesMobile/ddlUsertypelist";
+  static const franchise = "api/PresalesMobile/ddlbrachorfranchise";
+  static const company = "api/PresalesMobile/ddlCompany";
+  static const userList = "api/PresalesMobile/GetUsers";
+  static const userDetails = "api/PresalesMobile/GetUserDeatils";
+  static const adduser = "api/PresalesMobile/AddUser";
+  static const edituser = "api/PresalesMobile/UpdateUser";
+  static const addFollowUp = "api/PresalesMobile/FollowupSave";
+  static const addLeadDetailTaskCommon = "api/PresalesMobile/post";
+  static const postGeoLocation = "api/PresalesMobile/GeoLocation";
+  static const monthlyTarget = "api/PresalesMobile/MTargetlistnew";
+  static const BMList = "api/PresalesMobile/BM";
+  static const MRList = "api/PresalesMobile/ALLMR";
+  static const AddMTargets = "api/PresalesMobile/AddMTargets";
+  static const UpdateMTargets = "api/PresalesMobile/UpdateMTargets";
+  static const DeleteMTargets = "api/PresalesMobile/DeleteMTargets";
+  static const ContactCounts = "api/PresalesMobile/Customertotalinfo";
+  static const LeadTaskActivity = "api/PresalesMobile/GetActivityList";
+  static const LeadDetailTask = "api/PresalesMobile/GetTaskList";
+  static const addLeadFollowUp = "api/PresalesMobile/SaveFollowUp";
+  static const addState = "api/PresalesMobile/AddState";
+  static const addArea = "api/PresalesMobile/SaveArea";
+  static const addCity = "api/PresalesMobile/SaveCity";
+  static const orderlist = "api/PresalesMobile/OrderList";
+  static const ALLCUSTOMERS = "/api/mobileapi/GetAllCustomerPaging";
+  static const SAVEORDER = "/api/Mobileapi/appSaveOrder";
+  static const PENDINGSTOCK = "api/Mobileapi/stockpending";
+  static const String getAttachments =
+      '/api/PresalesMobile/Edocketist'; // Endpoint to get attachments
+  static const String uploadAttachment =
+      '/api/PresalesMobile/SaveEdocket'; // Endpoint to upload a new attachment
+  static const String updateAttachment =
+      '/api/PresalesMobile/updateAttachment'; // Endpoint to update an existing attachment
+  static const String deleteAttachment =
+      '/api/PresalesMobile/DeleteEdocket'; // Endpoint to delete an attachment
+  static const login = "api/login";
 
-  // Update API for Designer, Printer, Fabricator, Vendor
-
-  // Edit Job Details API
+  //reports
+  static const categorySales = '/api/PresalesMobile/categorywisesalesanalysis';
+  static const bottleNeck = '/api/PresalesMobile/leadBottlenecks';
 }

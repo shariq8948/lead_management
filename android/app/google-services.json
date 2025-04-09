@@ -1,8 +1,9 @@
 {
   "project_info": {
     "project_number": "1096183180732",
+    "firebase_url": "https://lead-management-f7402-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "lead-management-f7402",
-    "storage_bucket": "lead-management-f7402.appspot.com"
+    "storage_bucket": "lead-management-f7402.firebasestorage.app"
   },
   "client": [
     {
@@ -12,7 +13,20 @@
           "package_name": "com.psmsofttech.leads"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1096183180732-ufr0q8k8i1ft3rgppo1ic44aj6v7v43n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.psmsofttech.leads",
+            "certificate_hash": "ca287bd51ba62f96d90d1b56051563fff3f96490"
+          }
+        },
+        {
+          "client_id": "1096183180732-fn2tu84o4g20k8h6pq4vqhsq86lo1426.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAmwPuSl1dzYYWUWJeEFMO6bzeOya0nVtk"
@@ -20,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1096183180732-fn2tu84o4g20k8h6pq4vqhsq86lo1426.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1096183180732-29o3u4va7th21qs3bjciuveb5ders8db.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.psmsofttech.leads"
+              }
+            }
+          ]
         }
       }
     }

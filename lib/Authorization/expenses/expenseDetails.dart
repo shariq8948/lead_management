@@ -1,163 +1,158 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
-class Expensedetails extends StatelessWidget {
-  const Expensedetails({super.key});
+import 'details_controller.dart';
+
+class ExpenseDetailsPage extends StatelessWidget {
+  const ExpenseDetailsPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController hotelController = TextEditingController();
-    final TextEditingController foodController = TextEditingController();
-    final TextEditingController travelingController = TextEditingController();
-    final TextEditingController localTravelingController =
-        TextEditingController();
-    final TextEditingController localTravelingKMController =
-        TextEditingController();
-    final TextEditingController otherExpensesController =
-        TextEditingController();
-    final TextEditingController remarkController = TextEditingController();
-    final TextEditingController finalExpenseController =
-        TextEditingController();
-
-    hotelController.text = "100"; // Default value
-    foodController.text = "200"; // Default value
-    travelingController.text = "300"; // Default value
-    localTravelingController.text = "150"; // Default value
-    localTravelingKMController.text = "50"; // Default value
-    otherExpensesController.text = "100"; // Default value
-    remarkController.text = "No comments"; // Default value
-    finalExpenseController.text = "1000"; // Default value
+    final ExpenseDetailsController controller =
+        Get.put(ExpenseDetailsController());
 
     return Scaffold(
+      // backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text("Expense Details"),
-        // backgroundColor: Colors.deepPurpleAccent,
         elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              headerCard(),
-              const SizedBox(height: 16),
-              expenseDetailsSection(
-                hotelController,
-                foodController,
-                travelingController,
-                localTravelingController,
-                localTravelingKMController,
-                otherExpensesController,
-                remarkController,
-                finalExpenseController,
-              ),
-            ],
+        title: Text(
+          'Expense Details',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.attachment_outlined),
+            tooltip: 'View Attachments',
+            onPressed: () {
+              _showAttachmentBottomSheet(context);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More Options',
+            onPressed: () {
+              _showMoreOptionsBottomSheet(context);
+            },
+          ),
+        ],
       ),
+      body: Obx(() => SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                // Implement refresh logic if needed
+                await Future.delayed(Duration(seconds: 2));
+              },
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    _buildGeneralDetailsCard(controller),
+                    _buildExpenseDetailsCard(controller),
+                  ],
+                ),
+              ),
+            ),
+          )),
     );
   }
 
-  Widget headerCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.deepPurple, Colors.deepPurpleAccent],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+  Widget _buildGeneralDetailsCard(ExpenseDetailsController controller) {
+    final details = controller.expenseDetails.value;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, 4),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: ExpansionTile(
+          title: Text(
+            'General Details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple.shade700,
+            ),
+          ),
+          subtitle: Text(
+            'Expense ID: ${details.id}',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+          trailing: Icon(Icons.expand_more, color: Colors.deepPurple.shade700),
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildDetailRow('Name', details.name),
+                  _buildDetailRow(
+                      'Date', DateFormat('dd/MM/yyyy').format(details.date)),
+                  _buildDetailRow('Location',
+                      '${details.city}, ${details.state} (${details.area})'),
+                  _buildDetailRow(
+                      'Travel Period',
+                      '${DateFormat('dd/MM/yyyy').format(details.fromDate)} - '
+                          '${DateFormat('dd/MM/yyyy').format(details.toDate)}'),
+                  _buildDetailRow('Status', details.status.value),
+                ],
+              ),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "General Details",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              detailRow("Date", "2024-02-07"),
-              detailRow("City", "Mumbai"),
-              detailRow("State", "27-Maharashtra"),
-              detailRow("Area", "Andheri"),
-              detailRow("From", "2024-02-01"),
-              detailRow("To", "2024-02-07"),
-              detailRow("No. of Activity", "0"),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
-                  onPressed: () {
-                    print("View Attachment clicked");
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    backgroundColor: Colors.teal, // Background color
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          12), // Larger border radius for a rounded look
-                    ),
-                    elevation: 5, // Added shadow for depth
-                    shadowColor:
-                        Colors.teal.withOpacity(0.4), // Subtle shadow color
-                    side: BorderSide(
-                        color: Colors.tealAccent,
-                        width: 1.5), // Border with accent color
-                  ),
-                  child: Text(
-                    "View Attachment",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              )
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  Widget detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildExpenseDetailsCard(ExpenseDetailsController controller) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "$label:",
-            style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Expense Breakdown',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple.shade700,
+              ),
             ),
           ),
-          Flexible(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-              overflow: TextOverflow.ellipsis,
+          _buildAnimatedExpenseTable(controller),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildRemarkSection(controller),
+                SizedBox(height: 16),
+                _buildActionButtons(controller),
+              ],
             ),
           ),
         ],
@@ -165,59 +160,301 @@ class Expensedetails extends StatelessWidget {
     );
   }
 
-  Widget expenseDetailsSection(
-    TextEditingController hotelController,
-    TextEditingController foodController,
-    TextEditingController travelingController,
-    TextEditingController localTravelingController,
-    TextEditingController localTravelingKMController,
-    TextEditingController otherExpensesController,
-    TextEditingController remarkController,
-    TextEditingController finalExpenseController,
-  ) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Expense Details",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+  Widget _buildAnimatedExpenseTable(ExpenseDetailsController controller) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.shade50,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
             ),
-            const SizedBox(height: 16),
-            buildExpenseForm(
-              hotelController,
-              foodController,
-              travelingController,
-              localTravelingController,
-              localTravelingKMController,
-              otherExpensesController,
-              remarkController,
-              finalExpenseController,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Row(
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    print("Approve clicked");
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text("Approve"),
+                Expanded(
+                  child: Text('Category',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                Expanded(
+                  child: Text('Proposed',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                Expanded(
+                  child: Text('Checker',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                Expanded(
+                  child: Text('Final',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
+            ),
+          ),
+          ...controller.expenseDetails.value.expenses.entries.map((entry) {
+            return _buildAnimatedExpenseRow(entry.key, entry.value,
+                (value) => controller.updateFinalExpense(entry.key, value));
+          }).toList(),
+          _buildTotalWidget(controller), // Changed from _buildTotalRow
+        ],
+      ),
+    );
+  }
+
+// Replace TableRow with a Widget
+  Widget _buildTotalWidget(ExpenseDetailsController controller) {
+    return Container(
+      color: Colors.deepPurple.shade50,
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Total',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple.shade700),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                controller.totalProposedExpense.toString(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                controller.totalCheckerExpense.toString(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                controller.totalFinalExpense.toString(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple.shade700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnimatedExpenseRow(
+      String category, ExpenseItem item, Function(double) onFinalChanged) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(category, textAlign: TextAlign.center),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(item.proposed.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade700)),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(item.checker.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade700)),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextFormField(
+                initialValue: item.finalAmount.toString(),
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.deepPurple.shade100),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide:
+                        BorderSide(color: Colors.deepPurple.shade400, width: 2),
+                  ),
+                ),
+                onChanged: (value) {
+                  final parsedValue = double.tryParse(value);
+                  if (parsedValue != null) {
+                    onFinalChanged(parsedValue);
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRemarkSection(ExpenseDetailsController controller) {
+    return TextField(
+      controller: TextEditingController(
+          text: controller.expenseDetails.value.remark.value),
+      maxLines: 3,
+      decoration: InputDecoration(
+        labelText: 'Additional Remarks',
+        labelStyle: TextStyle(color: Colors.deepPurple.shade700),
+        hintText: 'Add any additional comments or notes...',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.deepPurple.shade100),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.deepPurple.shade400, width: 2),
+        ),
+      ),
+      onChanged: controller.updateRemark,
+    );
+  }
+
+  Widget _buildActionButtons(ExpenseDetailsController controller) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: controller.approveExpense,
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Approve'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.green.shade600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () {
+              _showRejectConfirmationDialog(controller);
+            },
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('Reject'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.red.shade600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.deepPurple.shade700,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAttachmentBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Attachments',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple.shade700,
+              ),
+            ),
+            SizedBox(height: 16),
+            ListTile(
+              leading: Icon(Icons.file_present, color: Colors.deepPurple),
+              title: Text('Expense_Receipt.pdf'),
+              subtitle: Text('2.3 MB'),
+              trailing: IconButton(
+                icon: Icon(Icons.download, color: Colors.deepPurple),
+                onPressed: () {
+                  // TODO: Implement download logic
+                },
+              ),
             ),
           ],
         ),
@@ -225,123 +462,95 @@ class Expensedetails extends StatelessWidget {
     );
   }
 
-  Widget buildExpenseForm(
-    TextEditingController hotelController,
-    TextEditingController foodController,
-    TextEditingController travelingController,
-    TextEditingController localTravelingController,
-    TextEditingController localTravelingKMController,
-    TextEditingController otherExpensesController,
-    TextEditingController remarkController,
-    TextEditingController finalExpenseController,
-  ) {
-    return Table(
-      border: TableBorder.all(color: Colors.grey.shade300, width: 0.5),
-      columnWidths: const {
-        0: FlexColumnWidth(2),
-        1: FlexColumnWidth(1.5),
-        2: FlexColumnWidth(1.5),
-        3: FlexColumnWidth(1.5),
-      },
-      children: [
-        buildExpenseHeaderRow(),
-        buildExpenseRow(
-            "Hotel", hotelController, "150", "100"), // Proposed, Checker values
-        buildExpenseRow("Food Expense", foodController, "200", "150"),
-        buildExpenseRow("Traveling", travelingController, "300", "250"),
-        buildExpenseRow(
-            "Local Traveling", localTravelingController, "150", "130"),
-        buildExpenseRow(
-            "Local Traveling KM", localTravelingKMController, "50", "45"),
-        buildExpenseRow("Other Expenses", otherExpensesController, "100", "90"),
-        buildExpenseRow(
-            "Remark", remarkController, "No comments", "Updated remarks",
-            isTextArea: true),
-        buildTotalRow("Total Expenses", "1000"), // Example value
-      ],
-    );
-  }
-
-  TableRow buildExpenseHeaderRow() {
-    return TableRow(
-      decoration: const BoxDecoration(color: Colors.grey),
-      children: [
-        headerCell(""),
-        headerCell("Proposed Expense"),
-        headerCell("Checker Expense"),
-        headerCell("Final Expense"),
-      ],
-    );
-  }
-
-  TableRow buildExpenseRow(String label, TextEditingController controller,
-      String proposedValue, String checkerValue,
-      {bool isTextArea = false}) {
-    return TableRow(
-      children: [
-        tableCell(label),
-        tableCell(proposedValue), // Proposed Expense (static value)
-        tableCell(checkerValue), // Checker Expense (static value)
-        editableField(controller, isTextArea), // Final Expense (editable)
-      ],
-    );
-  }
-
-  TableRow buildTotalRow(String label, String total) {
-    return TableRow(
-      children: [
-        tableCell(label),
-        tableCell(total), // Display total value in a read-only cell
-        tableCell(""), // Empty for Checker Expense
-        tableCell(""), // Empty for Final Expense
-      ],
-    );
-  }
-
-  Widget headerCell(String text) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        textAlign: TextAlign.center,
+  void _showMoreOptionsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-    );
-  }
-
-  Widget tableCell(String text) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.black),
-        textAlign: TextAlign.start,
-      ),
-    );
-  }
-
-  Widget editableField(TextEditingController controller, bool isTextArea) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: isTextArea
-          ? TextField(
-              controller: controller,
-              maxLines: 2,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            )
-          : TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                isDense: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'More Options',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple.shade700,
               ),
             ),
+            SizedBox(height: 16),
+            ListTile(
+              leading: Icon(Icons.print, color: Colors.deepPurple),
+              title: Text('Print Expense Report'),
+              onTap: () {
+                // TODO: Implement print logic
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.share, color: Colors.deepPurple),
+              title: Text('Share Expense Report'),
+              onTap: () {
+                _shareExpenseReport(context);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareExpenseReport(BuildContext context) {
+    // Implement share logic
+    // This could use a share package like share_plus in Flutter
+    // For now, a placeholder implementation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Sharing expense report...'),
+        backgroundColor: Colors.deepPurple.shade700,
+      ),
+    );
+  }
+
+  void _showRejectConfirmationDialog(ExpenseDetailsController controller) {
+    showDialog(
+      context: Get.context!,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Reject Expense',
+          style: TextStyle(color: Colors.deepPurple.shade700),
+        ),
+        content: TextField(
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'Provide reason for rejection...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          // onChanged: controller.updateRejectionReason,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // controller.rejectExpense();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+            ),
+            child: Text('Confirm Rejection'),
+          ),
+        ],
+      ),
     );
   }
 }

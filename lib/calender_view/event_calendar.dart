@@ -193,7 +193,7 @@ class EventCalendarState extends State<EventCalendar> {
             endTimeZone: '',
             description: '',
             isAllDay: false,
-            eventName: eventNameCollection[random.nextInt(7)],
+            eventName: eventNameCollection[random.nextInt(5)],
           ));
         }
       }

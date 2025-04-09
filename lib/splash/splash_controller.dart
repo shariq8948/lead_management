@@ -1,12 +1,11 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:leads/data/api/api_client.dart';
 
 import '../utils/tags.dart';
 
-
 class SplashController extends GetxController {
   RxBool animate = false.obs;
-
   // Get Launch Screen
   Future<String> getLaunchScreen() async {
     final GetStorage box = Get.find<GetStorage>(tag: StorageTags.tag);
