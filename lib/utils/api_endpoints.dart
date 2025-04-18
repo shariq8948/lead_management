@@ -56,6 +56,10 @@ class ApiEndpoints {
   static const addFollowUp = "api/PresalesMobile/FollowupSave";
   static const addLeadDetailTaskCommon = "api/PresalesMobile/post";
   static const postGeoLocation = "api/PresalesMobile/GeoLocation";
+  static const checkinAttendance = "api/Attendance/PostAttendance";
+  static const recordAttendance = "api/Attendance/PostAttendance";
+  static const attendancedayData = "api/Mobileapi/Attendance";
+  static const postFcmId = "api/Mobileapi/appUpdatefcmid";
   static const monthlyTarget = "api/PresalesMobile/MTargetlistnew";
   static const BMList = "api/PresalesMobile/BM";
   static const MRList = "api/PresalesMobile/ALLMR";
@@ -72,8 +76,11 @@ class ApiEndpoints {
   static const orderlist = "api/PresalesMobile/OrderList";
   static const ALLCUSTOMERS = "/api/mobileapi/GetAllCustomerPaging";
   static const SAVEORDER = "/api/Mobileapi/appSaveOrder";
+  static const SAVEQUOTATION = "/api/Mobileapi/savequoatation";
   static const PENDINGSTOCK = "api/Mobileapi/stockpending";
-  static const String getAttachments =
+  static const DASHBOARD_DATA = "api/PresalesMobile/GetDashboardData";
+  static const String getAttachments = '/api/PresalesMobile/Edocketist';
+  static const String getProfile =
       '/api/PresalesMobile/Edocketist'; // Endpoint to get attachments
   static const String uploadAttachment =
       '/api/PresalesMobile/SaveEdocket'; // Endpoint to upload a new attachment
@@ -86,4 +93,5 @@ class ApiEndpoints {
   //reports
   static const categorySales = '/api/PresalesMobile/categorywisesalesanalysis';
   static const bottleNeck = '/api/PresalesMobile/leadBottlenecks';
+  static const updateProfileImage = 'api/Mobileapi/AppUpdateUserImage';
 }

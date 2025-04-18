@@ -29,7 +29,7 @@ class TaskDetailPage extends StatelessWidget {
         body: SafeArea(
           child: Column(
             children: [
-              _buildTaskDetails(), // Header Section
+              _buildTaskDetails(context), // Header Section
               _buildTabBar(), // Custom ButtonsTabBar
               Expanded(
                 child: TabBarView(
@@ -299,7 +299,7 @@ class TaskDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTaskDetails() {
+  Widget _buildTaskDetails(BuildContext context) {
     return Container(
       margin: EdgeInsets.all(10),
       padding: const EdgeInsets.all(10),
@@ -412,13 +412,13 @@ class TaskDetailPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildStatusButton("Pending"),
+                      _buildStatusButton("Pending", context),
                       Icon(Icons.arrow_forward_ios,
                           size: 16, color: Colors.grey.shade600),
-                      _buildStatusButton("Completed"),
+                      _buildStatusButton("Completed", context),
                       Icon(Icons.arrow_forward_ios,
                           size: 16, color: Colors.grey.shade600),
-                      _buildStatusButton("Cancelled"),
+                      _buildStatusButton("Cancelled", context),
                     ],
                   ),
                 ],
@@ -427,13 +427,18 @@ class TaskDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusButton(String status) {
+  Widget _buildStatusButton(String status, BuildContext context) {
     final isSelected = controller.taskDetails[0].status == status;
 
     return GestureDetector(
       onTap: () {
         if (!isSelected) {
-          controller.postStatus(controller.taskDetails[0].id!, status);
+          // Show follow-up popup for Cancelled or Complete status
+          if (status == "Cancelled" || status == "Completed") {
+            _showFollowUpPopup(context, status);
+          } else {
+            controller.postStatus(controller.taskDetails[0].id!, status);
+          }
         }
       },
       child: Container(
@@ -464,6 +469,703 @@ class TaskDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showFollowUpPopup(BuildContext context, String status) {
+    final followUpController = Get.put(TaskDetailController());
+    followUpController.resetController();
+    followUpController.setStatusType(status);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return GetBuilder<TaskDetailController>(
+          init: followUpController,
+          builder: (controller) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                width: MediaQuery.of(context).size.width * 0.9,
+                constraints: BoxConstraints(maxWidth: 500),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 15,
+                      spreadRadius: 5,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Header decoration
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 8,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: status == 'Completed'
+                                  ? [
+                                      Colors.green.shade400,
+                                      Colors.green.shade600
+                                    ]
+                                  : [Colors.red.shade400, Colors.red.shade600],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Main content
+                      SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(24, 20, 24, 24),
+                          child: AnimatedSwitcher(
+                            duration: Duration(milliseconds: 300),
+                            transitionBuilder:
+                                (Widget child, Animation<double> animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: Offset(0, 0.05),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: controller.isStatusUpdated
+                                ? _buildFollowUpForm(controller, context)
+                                : _buildStatusUpdateForm(
+                                    context, status, controller),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusUpdateForm(
+      BuildContext context, String status, TaskDetailController controller) {
+    return Column(
+      key: ValueKey('status-form'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              status == 'Completed' ? Icons.check_circle : Icons.cancel,
+              color: status == 'Completed'
+                  ? Colors.green.shade600
+                  : Colors.red.shade600,
+              size: 28,
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Task ${status == 'Completed' ? 'Completion' : 'Cancellation'}",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: status == 'Completed'
+                      ? Colors.green.shade700
+                      : Colors.red.shade700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 24),
+        Text(
+          "Please provide a remark explaining why this task is being ${status.toLowerCase()}:",
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.grey.shade800,
+          ),
+        ),
+        SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              TextFormField(
+                controller: controller.statusRemarkController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: "Enter your remarks here...",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: status == 'Completed'
+                          ? Colors.green.shade400
+                          : Colors.red.shade400,
+                      width: 2,
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  contentPadding: EdgeInsets.fromLTRB(16, 16, 50, 16),
+                ),
+              ),
+              Positioned(
+                right: 8,
+                bottom: 8,
+                child: InkWell(
+                  onTap: () => controller.toggleSpeechRecognition(context),
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: controller.isListening
+                          ? Colors.red.withOpacity(0.1)
+                          : Colors.grey.shade200,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      controller.isListening ? Icons.mic : Icons.mic_none,
+                      color: controller.isListening
+                          ? Colors.red
+                          : Colors.grey.shade700,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (controller.isListening)
+          Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+              "Listening...",
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.red.shade400,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        SizedBox(height: 28),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey.shade700,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            ElevatedButton(
+              onPressed: () {
+                if (controller.statusRemarkController.text.trim().isEmpty) {
+                  Get.snackbar(
+                    'Required Field',
+                    'Please provide a remark to continue',
+                    backgroundColor: Colors.amber.shade100,
+                    colorText: Colors.amber.shade900,
+                    snackPosition: SnackPosition.BOTTOM,
+                    margin: EdgeInsets.all(16),
+                    borderRadius: 10,
+                    icon: Icon(Icons.warning_amber_rounded,
+                        color: Colors.amber.shade900),
+                  );
+                  return;
+                }
+
+                // // Update task status with remark
+                controller.postStatusWithRemark(
+                    this.controller.taskDetails[0].id!,
+                    status,
+                    controller.statusRemarkController.text.trim());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: status == 'Completed'
+                    ? Colors.green.shade600
+                    : Colors.red.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                elevation: 2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  controller.isSubmittingStatus
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Icon(Icons.check, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    "Submit",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFollowUpForm(
+      TaskDetailController controller, BuildContext context) {
+    final dateOptions = [
+      {"text": "Today", "icon": Icons.today},
+      {"text": "Tomorrow", "icon": Icons.event},
+      {"text": "After a week", "icon": Icons.date_range},
+      {"text": "After a month", "icon": Icons.calendar_month},
+      {"text": "Custom date", "icon": Icons.edit_calendar},
+    ];
+
+    return Column(
+      key: ValueKey('followup-form'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.event_note, color: Colors.blue.shade700, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Create Follow-up",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 24),
+        Text(
+          "When would you like to follow up?",
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade800,
+          ),
+        ),
+        SizedBox(height: 12),
+        Container(
+          height: 110,
+          child: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 2.3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: dateOptions.length,
+            itemBuilder: (context, index) {
+              return InkWell(
+                onTap: () {
+                  controller.selectDateOption(index);
+                  if (index == 4) {
+                    // Custom date option
+                    _selectCustomDate(context, controller);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: controller.selectedDateOption == index
+                        ? Colors.blue.shade50
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: controller.selectedDateOption == index
+                          ? Colors.blue.shade300
+                          : Colors.grey.shade300,
+                      width: controller.selectedDateOption == index ? 2 : 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          dateOptions[index]["icon"] as IconData,
+                          size: 16,
+                          color: controller.selectedDateOption == index
+                              ? Colors.blue.shade700
+                              : Colors.grey.shade600,
+                        ),
+                        SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            dateOptions[index]["text"] as String,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: controller.selectedDateOption == index
+                                  ? Colors.blue.shade700
+                                  : Colors.grey.shade700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        SizedBox(height: 16),
+        if (controller.selectedDateOption != -1) // Any date option selected
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today,
+                    color: Colors.blue.shade700, size: 18),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Follow-up date: ${DateFormat('EEEE, MMM dd, yyyy').format(controller.selectedDate)}",
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                if (controller.selectedDateOption == 4) // Custom date
+                  IconButton(
+                    icon:
+                        Icon(Icons.edit, size: 18, color: Colors.blue.shade700),
+                    onPressed: () => _selectCustomDate(context, controller),
+                    tooltip: "Change date",
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(),
+                  )
+              ],
+            ),
+          ),
+        SizedBox(height: 20),
+        Text(
+          "Follow-up Remarks",
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade800,
+          ),
+        ),
+        SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              TextFormField(
+                controller: controller.followUpRemarkController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: "What would you like to follow up on?",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        BorderSide(color: Colors.blue.shade400, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  contentPadding: EdgeInsets.fromLTRB(16, 16, 50, 16),
+                ),
+              ),
+              Positioned(
+                right: 8,
+                bottom: 8,
+                child: InkWell(
+                  onTap: () => controller.toggleSpeechRecognition(context,
+                      isFollowUp: true),
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: controller.isListeningFollowUp
+                          ? Colors.red.withOpacity(0.1)
+                          : Colors.grey.shade200,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      controller.isListeningFollowUp
+                          ? Icons.mic
+                          : Icons.mic_none,
+                      color: controller.isListeningFollowUp
+                          ? Colors.red
+                          : Colors.grey.shade700,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (controller.isListeningFollowUp)
+          Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+              "Listening...",
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.red.shade400,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        SizedBox(height: 28),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey.shade700,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            ElevatedButton(
+              onPressed: () {
+                if (controller.followUpRemarkController.text.trim().isEmpty) {
+                  Get.snackbar(
+                    'Required Field',
+                    'Please provide follow-up remarks',
+                    backgroundColor: Colors.amber.shade100,
+                    colorText: Colors.amber.shade900,
+                    snackPosition: SnackPosition.BOTTOM,
+                    margin: EdgeInsets.all(16),
+                    borderRadius: 10,
+                    icon: Icon(Icons.warning_amber_rounded,
+                        color: Colors.amber.shade900),
+                  );
+                  return;
+                }
+
+                // // Create follow-up
+                // controller.createFollowUp(
+                //   this.controller.taskDetails[0].id!,
+                //   controller.getSelectedFollowUpDate(),
+                //   controller.followUpRemarkController.text.trim(),
+                // );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                elevation: 2,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  controller.isSubmittingFollowUp
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Icon(Icons.add_task, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    "Create Follow-up",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _selectCustomDate(
+      BuildContext context, TaskDetailController controller) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue.shade600,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+            dialogTheme: DialogTheme(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 16,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      controller.setCustomDate(picked);
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case "Completed":
+        return Colors.green;
+      case "Cancelled":
+        return Colors.red;
+      case "Pending":
+        return Colors.orange;
+      case "In Progress":
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case "Completed":
+        return Icons.check_circle;
+      case "Cancelled":
+        return Icons.cancel;
+      case "Pending":
+        return Icons.hourglass_empty;
+      case "In Progress":
+        return Icons.sync;
+      default:
+        return Icons.circle;
+    }
+  }
+
+  String _getPriorityText(int priority) {
+    switch (priority) {
+      case 1:
+        return "Very Low";
+      case 2:
+        return "Low";
+      case 3:
+        return "Medium";
+      case 4:
+        return "High";
+      case 5:
+        return "Critical";
+      default:
+        return "Medium";
+    }
+  }
+
+  Color _getTextColor(String status) {
+    switch (status) {
+      case "Complete":
+      case "Cancelled":
+      case "In Progress":
+        return Colors.white;
+      default:
+        return Colors.black87;
+    }
   }
 
   Widget buildFollowUpDetails(BuildContext context) {
@@ -1101,34 +1803,167 @@ class TaskDetailPage extends StatelessWidget {
     }
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case "Pending":
-        return Colors.orange.shade100; // Light orange
-      case "Completed":
-        return Colors.green.shade100; // Light green
-      case "Cancelled":
-        return Colors.red.shade100; // Light red
-      default:
-        return Colors.grey.shade200; // Default light gray
-    }
-  }
-
-  Color _getTextColor(String status) {
-    switch (status) {
-      case "Pending":
-        return Colors.orange.shade800;
-      case "Completed":
-        return Colors.green.shade800;
-      case "Cancelled":
-        return Colors.red.shade800;
-      default:
-        return Colors.grey.shade800;
-    }
-  }
-
 // Function to share content
   void _shareContent() async {
     await Share.share('Check out this task detail!');
+  }
+}
+
+class AILeadAnalyticsController extends GetxController {
+  // Returns the optimal number of days to wait before following up based on historical data
+  int getOptimalFollowUpDays(
+      {required String status, required String leadType}) {
+    // In a real implementation, this would use ML models to analyze historical data
+    // For this demonstration, we're using hardcoded values
+    Map<String, Map<String, int>> optimalDays = {
+      "Completed": {
+        "Enterprise": 14,
+        "SMB": 10,
+        "Startup": 7,
+        "Individual": 21,
+      },
+      "Cancelled": {
+        "Enterprise": 30,
+        "SMB": 14,
+        "Startup": 7,
+        "Individual": 21,
+      },
+      "Pending": {
+        "Enterprise": 3,
+        "SMB": 2,
+        "Startup": 1,
+        "Individual": 4,
+      },
+      "In Progress": {
+        "Enterprise": 5,
+        "SMB": 3,
+        "Startup": 2,
+        "Individual": 4,
+      }
+    };
+
+    // Default values if specific combination not found
+    if (!optimalDays.containsKey(status)) return 7;
+    if (!optimalDays[status]!.containsKey(leadType))
+      return optimalDays[status]!.values.first;
+
+    return optimalDays[status]![leadType]!;
+  }
+
+  // Generates personalized follow-up notes based on lead data
+  String generateSmartFollowUpNote({
+    required String status,
+    required String leadName,
+    required String leadType,
+    required List<String> previousInteractions,
+    double engagementScore = 0.0,
+  }) {
+    // In a real implementation, this would use NLP to generate personalized notes
+    // For this demonstration, we're using templates
+
+    switch (status) {
+      case "Completed":
+        return "Task completed successfully with $leadName. Based on their engagement history and similar $leadType clients, recommended follow-up to discuss additional solutions that align with their business needs. Previous interactions show interest in our premium features.";
+
+      case "Cancelled":
+        return "Task cancelled with $leadName. Analysis of similar $leadType clients shows 42% can be re-engaged with a personalized approach addressing their specific concerns. Previous interactions suggest focus on ${_getLeadPainPoint(previousInteractions)}.";
+
+      case "Pending":
+        return "Follow up with $leadName about pending task. Based on engagement patterns for $leadType clients, recommend emphasizing key benefits and addressing potential objections about pricing. Provide case studies of similar companies.";
+
+      case "In Progress":
+        return "Check status with $leadName on ongoing task. Data from similar $leadType clients indicates providing additional resources at this stage increases completion rates by 27%. Consider sharing relevant documentation.";
+
+      default:
+        return "Follow up with $leadName based on recent interactions. Analyze their needs and prepare personalized solutions for the next discussion.";
+    }
+  }
+
+  // Generates an alternative follow-up note when the user requests a refresh
+  String generateAlternativeFollowUpNote({
+    required String status,
+    required String leadName,
+    required String leadType,
+    required List<String> previousInteractions,
+  }) {
+    // In a real implementation, this would generate a different note using NLP
+    // For this demonstration, we're using alternative templates
+
+    switch (status) {
+      case "Completed":
+        return "Follow up with $leadName to gather feedback on completed task. Their profile matches our ideal customer persona for upselling opportunities. Consider discussing how our advanced features could address their specific business challenge of ${_getLeadPainPoint(previousInteractions)}.";
+
+      case "Cancelled":
+        return "Re-engage with $leadName to understand reasons for cancellation. Similar $leadType clients have responded well to alternative offerings that address their specific pain points. Focus conversation on value proposition and ROI.";
+
+      case "Pending":
+        return "Check in with $leadName on pending decision. Analytics suggest that $leadType clients typically need additional information about implementation timeline and support options before converting. Prepare answers to potential technical questions.";
+
+      case "In Progress":
+        return "Touch base with $leadName on progress. Based on engagement patterns, now is an optimal time to discuss next steps and address any potential roadblocks. Consider offering a quick demo of recently added features.";
+
+      default:
+        return "Schedule follow-up with $leadName to maintain engagement. Based on their interaction history, they may be interested in our new solutions for ${_getLeadInterest(previousInteractions)}.";
+    }
+  }
+
+  // Calculate lead priority based on various factors
+  int calculateLeadPriority({
+    required String status,
+    required double leadValue,
+    required int conversionProbability,
+    required String industry,
+  }) {
+    // In a real implementation, this would use a scoring algorithm
+    // For this demonstration, we're using a simplified approach
+
+    // Base priority based on status
+    int basePriority = status == "Completed"
+        ? 3
+        : status == "In Progress"
+            ? 4
+            : status == "Pending"
+                ? 3
+                : 2;
+
+    // Adjust based on lead value
+    if (leadValue > 10000) basePriority++;
+    if (leadValue < 1000) basePriority--;
+
+    // Adjust based on conversion probability
+    if (conversionProbability > 75) basePriority++;
+    if (conversionProbability < 25) basePriority--;
+
+    // Ensure priority is within valid range
+    return basePriority.clamp(1, 5);
+  }
+
+  // Helper methods to extract insights from previous interactions
+  String _getLeadPainPoint(List<String> interactions) {
+    // In a real implementation, this would use NLP to analyze conversations
+    // For this demonstration, we're returning placeholder values
+    List<String> painPoints = [
+      "budget constraints",
+      "implementation timeline",
+      "technical integration",
+      "team adoption",
+      "scalability concerns"
+    ];
+
+    return painPoints[DateTime.now().microsecond % painPoints.length];
+  }
+
+  String _getLeadInterest(List<String> interactions) {
+    // In a real implementation, this would use NLP to analyze conversations
+    // For this demonstration, we're returning placeholder values
+    List<String> interests = [
+      "automation features",
+      "reporting capabilities",
+      "mobile integration",
+      "team collaboration tools",
+      "API access"
+    ];
+
+    return interests[DateTime.now().microsecond % interests.length];
   }
 }

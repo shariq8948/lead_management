@@ -9,6 +9,7 @@ import 'package:leads/data/models/task_details.dart';
 import 'package:leads/utils/api_endpoints.dart';
 import 'package:leads/utils/tags.dart';
 import 'package:leads/widgets/custom_snckbar.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../Masters/Target/monthlyTarget/add_product_controller.dart';
 import '../../data/models/dropdown_list.model.dart';
@@ -54,7 +55,21 @@ class TaskDetailController extends GetxController {
     CallTypeModel(status: "Pending", value: "1"),
     CallTypeModel(status: "Complete", value: "2"),
   ].obs;
+  TextEditingController followUpRemarkController = TextEditingController();
+  TextEditingController statusRemarkController = TextEditingController();
+  bool isStatusUpdated = false;
+  bool isSubmittingStatus = false;
+  bool isSubmittingFollowUp = false;
+  bool isListening = false;
+  bool isListeningFollowUp = false;
+  int selectedDateOption =
+      0; // 0: Today, 1: Tomorrow, 2: After a week, 3: After a month, 4: Custom
+  DateTime selectedDate = DateTime.now();
+  String statusType = 'Completed'; // Default
 
+  // Speech recognition instance
+  final SpeechToText _speechToText = SpeechToText();
+  bool _speechEnabled = false;
   // Task data
   RxList<TaskDetail> taskDetails = <TaskDetail>[].obs;
   RxList<TaskActivityModel> taskActivities = <TaskActivityModel>[].obs;
@@ -67,6 +82,10 @@ class TaskDetailController extends GetxController {
   TaskDetailController({ApiClient? apiClient, GetStorage? storage})
       : apiClient = apiClient ?? ApiClient(),
         storage = storage ?? GetStorage();
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    update();
+  }
 
   @override
   void onInit() {
@@ -75,6 +94,105 @@ class TaskDetailController extends GetxController {
     fetchassignTo();
     fetchDetails();
     fetchHistory();
+    _initSpeech();
+  }
+
+  void toggleSpeechRecognition(BuildContext context,
+      {bool isFollowUp = false}) async {
+    if (_speechToText.isListening) {
+      await _speechToText.stop();
+      isFollowUp ? isListeningFollowUp = false : isListening = false;
+    } else {
+      if (!_speechEnabled) {
+        Get.snackbar(
+          'Speech Recognition',
+          'Speech recognition is not available on this device',
+          backgroundColor: Colors.red.shade100,
+          colorText: Colors.red.shade900,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: EdgeInsets.all(16),
+        );
+        return;
+      }
+
+      isFollowUp ? isListeningFollowUp = true : isListening = true;
+      final locale = Get.locale ?? Locale('en_US');
+
+      await _speechToText.listen(
+        onResult: (result) {
+          if (result.finalResult) {
+            String currentText = isFollowUp
+                ? followUpRemarkController.text
+                : statusRemarkController.text;
+
+            String newText = currentText.isEmpty
+                ? result.recognizedWords
+                : '$currentText ${result.recognizedWords}';
+
+            if (isFollowUp) {
+              followUpRemarkController.text = newText;
+            } else {
+              statusRemarkController.text = newText;
+            }
+
+            isFollowUp ? isListeningFollowUp = false : isListening = false;
+          }
+          update();
+        },
+        localeId: locale.toString(),
+      );
+    }
+    update();
+  }
+
+  void setStatusType(String status) {
+    statusType = status;
+    update();
+  }
+
+  void resetController() {
+    statusRemarkController.clear();
+    followUpRemarkController.clear();
+    isStatusUpdated = false;
+    isSubmittingStatus = false;
+    isSubmittingFollowUp = false;
+    isListening = false;
+    isListeningFollowUp = false;
+    selectedDateOption = 0;
+    selectedDate = DateTime.now();
+    update();
+  }
+
+  void selectDateOption(int index) {
+    selectedDateOption = index;
+
+    // Set the date based on selection
+    switch (index) {
+      case 0: // Today
+        selectedDate = DateTime.now();
+        break;
+      case 1: // Tomorrow
+        selectedDate = DateTime.now().add(Duration(days: 1));
+        break;
+      case 2: // After a week
+        selectedDate = DateTime.now().add(Duration(days: 7));
+        break;
+      case 3: // After a month
+        selectedDate = DateTime.now().add(Duration(days: 30));
+        break;
+      // Case 4 (Custom date) is handled separately
+    }
+
+    update();
+  }
+
+  void setCustomDate(DateTime date) {
+    selectedDate = date;
+    update();
+  }
+
+  DateTime getSelectedFollowUpDate() {
+    return selectedDate;
   }
 
   void fetchassignTo() async {
@@ -199,9 +317,48 @@ class TaskDetailController extends GetxController {
     }
   }
 
+  void postStatusWithRemark(String taskId, String status, String remark) {
+    isSubmittingStatus = true;
+    update();
+
+    // Call your API here to update the task status with remark
+    // Example:
+    // final result = await taskService.updateStatus(taskId, status, remark);
+
+    // For demo, we'll simulate API call
+    Future.delayed(Duration(milliseconds: 1200), () {
+      isSubmittingStatus = false;
+      isStatusUpdated = true;
+
+      // Show success notification
+      Get.snackbar(
+        'Status Updated',
+        'Task has been marked as $status',
+        backgroundColor:
+            status == 'Completed' ? Colors.green.shade100 : Colors.red.shade100,
+        colorText:
+            status == 'Completed' ? Colors.green.shade900 : Colors.red.shade900,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 2),
+        icon: Icon(
+          status == 'Completed' ? Icons.check_circle : Icons.cancel,
+          color: status == 'Completed'
+              ? Colors.green.shade900
+              : Colors.red.shade900,
+        ),
+      );
+
+      update();
+    });
+  }
+
   @override
   void onClose() {
     // Dispose controllers to avoid memory leaks
+    statusRemarkController.dispose();
+    followUpRemarkController.dispose();
+    _speechToText.cancel();
     assignToController.dispose();
     super.onClose();
   }

@@ -651,16 +651,44 @@ class _ProductListPageOrderState extends State<ProductListPageOrder> {
                             );
                           }
                         }
-                      : null,
+                      : () {
+                          final quantity = selectedQuantity.value;
+                          final discount =
+                              double.tryParse(discountController.text) ?? 0;
+
+                          if (quantity > 0 && quantity <= availableStock) {
+                            cartController.addToCart(
+                                product, quantity, discount);
+                            Get.back();
+                            Get.snackbar(
+                              'Success',
+                              'Added ${product.itemName} to cart',
+                              snackPosition: SnackPosition.BOTTOM,
+                              margin: const EdgeInsets.all(16),
+                              backgroundColor: Colors.green.shade100,
+                              colorText: Colors.green.shade900,
+                            );
+                          } else if (quantity > availableStock) {
+                            // Show error if trying to add more than available stock
+                            Get.snackbar(
+                              'Error',
+                              'Cannot add more than available stock ($availableStock items)',
+                              snackPosition: SnackPosition.BOTTOM,
+                              margin: const EdgeInsets.all(16),
+                              backgroundColor: Colors.red.shade100,
+                              colorText: Colors.red.shade900,
+                            );
+                          }
+                        },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.shopping_cart),
                       const SizedBox(width: 8),
                       Text(
-                        availableStock > 0
-                            ? 'Add to Cart (${selectedQuantity.value})'
-                            : 'Out of Stock',
+                        // availableStock > 0?
+                        'Add to Cart (${selectedQuantity.value})',
+                        // : 'Out of Stock'
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -838,7 +866,11 @@ class ProductCard extends StatelessWidget {
                             return isInCart
                                 ? _buildQuantityController(cartController,
                                     theme, availableWidth, textScaleFactor)
-                                : (double.tryParse(product.currentStock!)! > 0)
+                                : (double.tryParse(product.currentStock!)! >
+                                            0 ||
+                                        double.tryParse(
+                                                product.currentStock!)! <=
+                                            0)
                                     ? _buildAddToCartButton(
                                         theme, availableWidth, textScaleFactor)
                                     : _buildOutOfStockButton(

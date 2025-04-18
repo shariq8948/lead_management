@@ -5,13 +5,14 @@ import 'notification_model.dart';
 class NotificationDatabaseHelper {
   static Database? _database;
 
-  static Future<Database> getDatabase() async {
-    if (_database != null) return _database!;
+  // Add an explicit initialization method
+  static Future<void> initDatabase() async {
+    if (_database != null) return;
 
-    String path = join(await getDatabasesPath(), 'notifications.db');
+    String path = join(await getDatabasesPath(), 'notifications_v1.db');
     _database = await openDatabase(
       path,
-      version: 2,
+      version: 1, // Starting fresh with version 1
       onCreate: (db, version) {
         return db.execute(
           '''CREATE TABLE notifications(
@@ -21,28 +22,54 @@ class NotificationDatabaseHelper {
             timestamp TEXT,
             isRead INTEGER,
             navigationTarget TEXT,
-            navigationId TEXT,  -- Added new field
-            imageUrl TEXT
+            navigationId TEXT,
+            imageUrl TEXT,
+            notificationType TEXT,
+            notificationAction TEXT,
+            isCalendar TEXT,
+            location TEXT,
+            startDate TEXT,
+            endDate TEXT,
+            userId TEXT,
+            priority TEXT,
+            popupDataActionId TEXT,
+            popupDataActionType TEXT,
+            popupDataRemark TEXT,
+            popupAdditionalData TEXT
           )''',
         );
       },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await db.execute(
-              'ALTER TABLE notifications ADD COLUMN navigationId TEXT;');
-        }
-      },
     );
+    print('✅ Database initialized successfully');
+  }
+
+  static Future<Database> getDatabase() async {
+    if (_database != null) return _database!;
+
+    await initDatabase();
     return _database!;
   }
 
   static Future<int> insertNotification(AppNotification notification) async {
-    final db = await getDatabase();
-    return await db.insert(
-      'notifications',
-      notification.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    try {
+      final db = await getDatabase();
+
+      // Convert notification to map
+      final Map<String, dynamic> notificationMap = notification.toMap();
+
+      print('Inserting notification with ID: ${notification.id}');
+      print('Data: $notificationMap');
+
+      return await db.insert(
+        'notifications',
+        notificationMap,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (e, stack) {
+      print('❌ Error inserting notification: $e');
+      print('Stack trace: $stack');
+      return -1;
+    }
   }
 
   // Fetch all notifications
@@ -50,14 +77,8 @@ class NotificationDatabaseHelper {
     final db = await getDatabase();
     final List<Map<String, dynamic>> maps = await db.query(
       'notifications',
-      orderBy: 'id DESC',
+      orderBy: 'timestamp DESC',
     );
-
-    // Log retrieved data to the console
-    // print('Retrieved Notifications from Database:');
-    for (var map in maps) {
-      // print(map);
-    }
 
     return List.generate(maps.length, (i) {
       return AppNotification.fromMap(maps[i]);

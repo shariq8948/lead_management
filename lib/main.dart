@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -10,28 +11,36 @@ import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:leads/Tabs/homepage/homepage_controller.dart';
 import 'package:leads/auth/login/login_controller.dart';
+import 'package:leads/notifications/notification_controller.dart'; // Import to access the top-level background handler
+import 'package:leads/notifications/notification_db.dart'; // Import DB helper
 import 'package:leads/splash/splash_binding.dart';
 import 'package:leads/utils/constants.dart';
 import 'package:leads/utils/dependancy_injection.dart';
 import 'package:leads/utils/input_theme.dart';
 import 'package:leads/utils/routes.dart';
 
-
-import 'alarm/alarm.dart';
 import 'observer/applifecycle.dart';
 import 'observer/location_controller.dart';
 import 'observer/navigator_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase first
   await Firebase.initializeApp();
-  await AlarmService.initialize(); // Initialize alarm manager
+
+  // Initialize database early
+  await NotificationDatabaseHelper.initDatabase();
+
+  // Register background handler directly here
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Initialize storage
+  await GetStorage.init();
   Get.put(LocationController());
 
-  // Initialize the lifecycle handler globally
-  Get.put(AppLifecycleHandler()); // Ensure the handler is initialized
+  Get.put(AppLifecycleHandler());
 
-  await GetStorage.init();
   DependencyInjection.init();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -57,11 +66,9 @@ class App extends StatelessWidget {
       ),
     );
     return GetMaterialApp(
-      // showPerformanceOverlay: true,
       title: "Job Card Management",
       themeMode: ThemeMode.dark,
-      navigatorObservers: [AppNavigationObserver()], // Add the observer here
-
+      navigatorObservers: [AppNavigationObserver()],
       navigatorKey: navigatorKey,
       initialRoute: Routes.splashRoute,
       initialBinding: SplashBinding(),
@@ -71,12 +78,9 @@ class App extends StatelessWidget {
         scaffoldBackgroundColor: screenbgColor,
         primaryColor: primary3Color,
         inputDecorationTheme: MyInputTheme().theme(),
-        textTheme:
-            GoogleFonts.josefinSansTextTheme(), // Apply Josefin Sans globally
+        textTheme: GoogleFonts.josefinSansTextTheme(),
         useMaterial3: true,
-        appBarTheme: AppBarTheme(
-            color: Colors.tealAccent // Customize AppBar background color
-            ),
+        appBarTheme: AppBarTheme(color: Colors.tealAccent),
       ),
       enableLog: true,
     );

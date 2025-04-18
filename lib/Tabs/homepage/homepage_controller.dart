@@ -3,19 +3,23 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:leads/data/models/graph-model.dart';
+import 'package:leads/utils/tags.dart';
 import 'package:leads/widgets/custom_snckbar.dart';
 import '../../data/models/lead_list.dart';
 import '../../data/api/api_client.dart'; // Assuming the ApiClient is in this path
 import '../../data/models/dashboard_count.dart';
 import '../../data/models/task_list.dart';
-import '../../utils/api_endpoints.dart'; // Assuming the AllCountList model is here
+import '../../utils/api_endpoints.dart';
+import 'model.dart'; // Assuming the AllCountList model is here
 
 class HomeController extends GetxController with SingleGetTickerProviderMixin {
   final box = GetStorage();
   late TabController tabController;
   late PageController pageController;
   RxBool isAdminMode = true.obs;
-
+  Rx<DashboardData?> dashboardData = Rx<DashboardData?>(null);
+  DateTime to = DateTime.now();
+  DateTime from = DateTime.now().subtract(Duration(days: 30));
   // Method to toggle between screens
   void toggleMode(bool value) {
     isAdminMode.value = value;
@@ -45,19 +49,11 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   RxInt taskCount = 0.obs; // Store the TaskList count
   RxInt leadCount = 0.obs; // Store the LeadList count
   RxBool isLoading = true.obs; // Flag to track loading state
+  RxBool isStatsLoading = true.obs; // Flag to track loading state
   RxList selected = [].obs;
   @override
   void onInit() {
     super.onInit();
-    final List<PerformanceData> datatask = [
-      PerformanceData(label: 'Calls', achieved: 85, target: 100),
-      PerformanceData(label: 'Meeting', achieved: 75, target: 100),
-      PerformanceData(label: 'Product Sale', achieved: 70, target: 100),
-      PerformanceData(label: 'Follow-up', achieved: 65, target: 100),
-      PerformanceData(label: 'Collection', achieved: 80, target: 100),
-      PerformanceData(label: 'Sales', achieved: 90, target: 100),
-      PerformanceData(label: 'Lead', achieved: 60, target: 100),
-    ];
     fetchDashboardCount();
     // fetchLeads();
     fetchTasksByTab("Today");
@@ -66,6 +62,7 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
     print("this is testing for every task");
     fetchFunnelData();
     fetchPieData();
+    fetchFilteredData(startDate: from, endDate: to);
     tabController =
         TabController(length: 3, vsync: this); // Initialize TabController
     pageController = PageController(); // Initialize PageController
@@ -152,6 +149,32 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
     }
   }
 
+  Future<void> fetchDashstats(var from, var to) async {
+    try {
+      isStatsLoading.value = true;
+
+      var res = await ApiClient().postg(ApiEndpoints.DASHBOARD_DATA, data: {
+        "Fromdate": from,
+        "Uptodate": to,
+        "UserId": box.read(StorageTags.userId),
+        "Syscompanyid": box.read(StorageTags.sysComapnyId),
+        "Sysbranchid": box.read(StorageTags.sysBranchid)
+      });
+      print(res);
+      // Parse the response and update dashboardData
+      if (res != null) {
+        dashboardData.value = DashboardData.fromJson(res);
+        print("Dashboard data loaded successfully");
+      } else {
+        print("Failed to load dashboard data: response was null");
+      }
+    } catch (e) {
+      print("Error fetching dashboard data: $e");
+    } finally {
+      isStatsLoading.value = false;
+    }
+  }
+
   fetchTasksByTab(String tabType) {
     String filterType = '';
     if (tabType == 'Today') {
@@ -211,7 +234,7 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
     return countItem.count;
   }
 
-  void fetchAssignedLead({String? fromDate, String? toDate}) async {
+  Future<void> fetchAssignedLead({String? fromDate, String? toDate}) async {
     String userId = box.read("userId");
 
     try {
@@ -320,20 +343,12 @@ class HomeController extends GetxController with SingleGetTickerProviderMixin {
   RxString customDateRangeLabel = ''.obs;
 
   void fetchFilteredData(
-      {required DateTime startDate, required DateTime endDate}) {
-    // Implement your data fetching logic here
-    print('Fetching data from $startDate to $endDate');
+      {required DateTime startDate, required DateTime endDate}) async {
+    final DateFormat formatter = DateFormat('yyyy-MM-dd');
+
+    final String formattedStartDate = formatter.format(startDate);
+    final String formattedEndDate = formatter.format(endDate);
+    await fetchDashstats(formattedStartDate, formattedEndDate);
+    print('Fetching data from $formattedStartDate to $formattedEndDate');
   }
-}
-
-class PerformanceData {
-  final String label;
-  final double achieved;
-  final double target;
-
-  const PerformanceData({
-    required this.label,
-    required this.achieved,
-    required this.target,
-  });
 }

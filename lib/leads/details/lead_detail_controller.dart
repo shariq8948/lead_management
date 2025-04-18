@@ -249,6 +249,48 @@ class LeadDetailController extends GetxController {
     }
   }
 
+  Future<void> addMetting() async {
+    try {
+      var formatedtime =
+          "${hoursInputController.text}:${minutesInputController.text}";
+      var res = await ApiClient().addLeadMetting(
+          endPoint: ApiEndpoints.addLeadDetailTaskCommon,
+          leadId: details[0].leadid,
+          title: titleController.text,
+          from: fromDateCtlr.text,
+          to: toDateController.text,
+          location: locationController.text,
+          description: descriptionController.text,
+          outomeRemark: ocRemarkController.text,
+          assignTo: assignToController.text);
+      print(afAssignToController.text);
+      print(afDateController.text);
+      print(afDescriptionController.text);
+      print(formatedtime);
+      Get.back();
+
+      if (res.isSuccess) {
+        fetchLeadActivity(details[0].leadid);
+        fetchLeadTask(details[0].leadid);
+        CustomSnack.show(
+            content: res.message,
+            snackType: SnackType.success,
+            behavior: SnackBarBehavior.fixed);
+      } else {
+        CustomSnack.show(
+            content: res.message,
+            snackType: SnackType.error,
+            behavior: SnackBarBehavior.fixed);
+      }
+      // Indicate success
+    } catch (error) {
+      print("Error saving lead: $error");
+      // Indicate failure
+    } finally {
+      // Get.back();
+    }
+  }
+
   Future<void> addCall(String id) async {
     try {
       isLoading.value = true;
@@ -261,8 +303,12 @@ class LeadDetailController extends GetxController {
           assignTo: cdAssignToController.text,
           description: cdRemarkController.text,
           date: cdDateController.text,
-          CallType: cdCallStatusController.text);
+          CallType: cdShowCallTypeController.text);
+      print(response.isSuccess);
+      print(response.message);
       if (response.isSuccess) {
+        await fetchLeadActivity(details[0].leadid);
+        fetchLeadTask(details[0].leadid);
         CustomSnack.show(
             content: response.message,
             snackType: SnackType.success,

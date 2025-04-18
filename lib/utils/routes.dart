@@ -17,6 +17,8 @@ import 'package:leads/master-reports/leadlifecycle/drop-off/binding/binding.dart
 import 'package:leads/master-reports/leadlifecycle/drop-off/view/view.dart';
 import 'package:leads/orders/bindings/productlist_binding.dart';
 import 'package:leads/orderslist/orderslist_page.dart';
+import 'package:leads/profilePage/profile_page.dart';
+import 'package:leads/profile_pages/details/attendance/attendance_list_view.dart';
 
 import '../Masters/Customer_entry/binding.dart';
 import '../Masters/Customer_entry/customer_entry_controller.dart';
@@ -28,6 +30,8 @@ import '../Reports/Marketing_reports/msr/binding.dart';
 import '../Reports/orders/order_overview/order_view_page.dart';
 import '../Reports/payement_report/mr_daily_collection/binding.dart';
 import '../Reports/payement_report/mr_daily_collection/mr_daily_colleection_page.dart';
+import '../attendance/attendance_page.dart';
+import '../attendance/binding.dart';
 import '../auth/login/login_binding.dart';
 import '../auth/login/login_screen.dart';
 import '../contactimport/binding.dart';
@@ -37,6 +41,7 @@ import '../orders/bindings/cart_binding.dart';
 import '../orders/views/allproducts.dart';
 import '../orders/views/cart_page.dart';
 import '../orderslist/binding.dart';
+import '../profilePage/binding.dart';
 import '../splash/splash_binding.dart';
 import '../splash/splash_screen.dart';
 
@@ -50,6 +55,7 @@ class Routes {
   static const productList = "/productlist";
   static const leadDetail = "/leaddetail";
   static const LEAD_LIST = "/lead-list";
+  static const ATTENDANCE = "/attendance";
   static const DDROP_OFF = "/drop-off";
   static const CREATE_LEAD = "/create-lead";
   static const String COLLECTION_REPORT = '/collection-report';
@@ -59,6 +65,7 @@ class Routes {
   static const String CONTACT_IMPORT = '/contact-import';
   static const String EXCEL_IMPORT = '/excel-import';
   static const String PRODUCT_ORDERS = '/product-orders';
+  static const String PROFILE = '/profile';
   static const String ORDERS_LIST = '/order-list';
   static const String CUSTOMER_ENTRY = '/customer-entry';
   static const CART_PAGE = '/cart-page';
@@ -172,6 +179,16 @@ class Routes {
       name: EXCEL_IMPORT,
       page: () => ExcelImportPage(),
       binding: ExcelImportBinding(),
+    ),
+    GetPage(
+      name: ATTENDANCE,
+      page: () => AttendancePage(),
+      binding: AttendanceBinding(),
+    ),
+    GetPage(
+      name: PROFILE,
+      page: () => ProfilePage(),
+      binding: ProfileBinding(),
     ),
     // Main Tabs
   ];

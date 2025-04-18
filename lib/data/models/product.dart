@@ -36,8 +36,28 @@ class Products1 {
   double customerDiscount;
 
   // Controllers for managing text input
-  TextEditingController qtyController;
-  TextEditingController discountController;
+  late TextEditingController qtyController;
+  late TextEditingController discountController;
+
+  // Update quantity with validation
+  void updateQuantity(String value) {
+    int newQty = int.tryParse(value) ?? 1;
+    if (newQty > 0) {
+      qty.value = newQty;
+      if (qtyController.text != newQty.toString()) {
+        qtyController.text = newQty.toString();
+      }
+    }
+  }
+
+  // Update discount with validation
+  void updateDiscount(String value) {
+    double newDiscount = double.tryParse(value) ?? 0.0;
+    if (newDiscount >= 0 && newDiscount <= 100) {
+      discount.value = newDiscount;
+      discountController.text = newDiscount.toString();
+    }
+  }
 
   Products1({
     required this.id,
@@ -75,9 +95,9 @@ class Products1 {
   })  : isSelected = RxBool(isSelected),
         qty = RxInt(qty),
         discount = RxDouble(discount),
-        // Initialize controllers with default values
-        qtyController = TextEditingController(text: qty.toString()),
-        discountController = TextEditingController(text: discount.toString());
+        // Initialize controllers with default values.  The text is set later in fromJson
+        qtyController = TextEditingController(),
+        discountController = TextEditingController();
 
   factory Products1.fromJson(Map<String, dynamic> json) {
     return Products1(
@@ -86,7 +106,6 @@ class Products1 {
       mrp: json['Mrp'],
       imageUrl: json['Imageurl'],
       Imagepath: json['Imagepath'],
-
       iname: json['Iname'] ?? '',
       icode: json['Icode'],
       autocode: json['Autocode'],
@@ -114,7 +133,9 @@ class Products1 {
           int.tryParse(json['Qty']?.toString() ?? '1') ?? 1, // Safely parse qty
       discount: double.tryParse(json['Discount']?.toString() ?? '0') ??
           0.0, // Safely parse discount
-    );
+    )
+      ..qtyController.text = (json['Qty'] ?? 1).toString()
+      ..discountController.text = (json['Discount'] ?? 0.0).toString();
   }
 
   Map<String, dynamic> toJson() {

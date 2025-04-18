@@ -1010,9 +1010,8 @@ class LeadDetailsPage extends StatelessWidget {
                   ),
                   Spacer(),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.grey),
-                    onPressed: () => Get.back(),
-                  ),
+                      icon: Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Get.back()),
                 ],
               ),
             ),
@@ -1116,8 +1115,7 @@ class LeadDetailsPage extends StatelessWidget {
                                 withShadow: true,
                                 hintText: "Set reminder",
                                 readOnly: true,
-                                editingController:
-                                    controller.afReminderController,
+                                editingController: controller.ReminderCtlr,
                                 inputAction: TextInputAction.next,
                                 inputType: TextInputType.text,
                                 labelText: '',
@@ -1174,6 +1172,7 @@ class LeadDetailsPage extends StatelessWidget {
                   controller.isLoading.value = true;
                   await controller.addFollowUp(controller.details[0].leadid!);
                   controller.fetchLeadTask(controller.details[0].leadid!);
+                  controller.fetchLeadActivity(controller.details[0].leadid!);
                   controller.isLoading.value = false;
                   // Get.back();
                 },
@@ -1246,39 +1245,42 @@ class LeadDetailsPage extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Date',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[700],
+                          child: Form(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Date',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[700],
+                                  ),
                                 ),
-                              ),
-                              SizedBox(height: 8),
-                              CustomField(
-                                withShadow: true,
-                                hintText: "Select date",
-                                readOnly: true,
-                                editingController: controller.cdDateController,
-                                inputAction: TextInputAction.next,
-                                inputType: TextInputType.text,
-                                labelText: '',
-                                onFieldTap: () {
-                                  Get.bottomSheet(
-                                    CustomDatePicker(
-                                      pastAllow: true,
-                                      confirmHandler: (date) {
-                                        controller.cdDateController.text =
-                                            date ?? "";
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                                SizedBox(height: 8),
+                                CustomField(
+                                  withShadow: true,
+                                  hintText: "Select date",
+                                  readOnly: true,
+                                  editingController:
+                                      controller.cdDateController,
+                                  inputAction: TextInputAction.next,
+                                  inputType: TextInputType.text,
+                                  labelText: '',
+                                  onFieldTap: () {
+                                    Get.bottomSheet(
+                                      CustomDatePicker(
+                                        pastAllow: true,
+                                        confirmHandler: (date) {
+                                          controller.cdDateController.text =
+                                              date ?? "";
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         SizedBox(width: 16),
@@ -1357,6 +1359,8 @@ class LeadDetailsPage extends StatelessWidget {
                                         .toList(),
                                     onSelect: (val) {
                                       controller.cdCallTypeController.text =
+                                          val.id;
+                                      controller.cdShowCallTypeController.text =
                                           val.value;
                                     },
                                     textEditCtlr:
@@ -1451,8 +1455,7 @@ class LeadDetailsPage extends StatelessWidget {
               ),
               child: CustomButton(
                 onPressed: () {
-                  // Save action
-                  Get.back();
+                  controller.addCall(controller.details[0].leadid);
                 },
                 buttonType: ButtonTypes.primary,
                 width: Get.size.width,
@@ -1752,11 +1755,10 @@ class LeadDetailsPage extends StatelessWidget {
                   Expanded(
                     child: CustomActionButton(
                       onPressed: () {
-                        // Save meeting details
-                        Get.back();
+                        controller.addMetting();
                       },
-                      type: CustomButtonType.cancel,
-                      label: 'Cancel',
+                      type: CustomButtonType.save,
+                      label: 'Save',
                     ),
                   ),
                 ],

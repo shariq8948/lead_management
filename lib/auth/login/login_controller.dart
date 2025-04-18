@@ -130,7 +130,6 @@ class LoginController extends GetxController {
 
         String? fcmToken = await FirebaseMessaging.instance.getToken();
         print("FCM Token test: $fcmToken");
-
         LocationPermission permission = await Geolocator.requestPermission();
 
         Position? position;
@@ -191,7 +190,7 @@ class LoginController extends GetxController {
         );
 
         loading.value = false;
-
+        print(response.toJson());
         if (response.success == "1") {
           await box.write(
               StorageTags.userDetails, jsonEncode(response.toJson()));
@@ -207,6 +206,13 @@ class LoginController extends GetxController {
           await box.write(StorageTags.email, emailText);
 
           await apiClient.updateBaseUrl(domainText);
+          var res = await apiClient.postg(ApiEndpoints.postFcmId, data: {
+            "Userid": box.read(StorageTags.userId),
+            "Fcmid": fcmToken,
+            "Imeiid": ""
+          });
+          print(res);
+          print("this is responding fcm");
 
           // Navigate to the main screen
           Get.offAllNamed("/main");

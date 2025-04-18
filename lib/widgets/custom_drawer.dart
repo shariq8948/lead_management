@@ -15,6 +15,7 @@ import '../Masters/Target/productTarget/product_target_list.dart';
 import '../Masters/category/category_list_page.dart';
 import '../Masters/customerList/customer_list_page.dart';
 import '../Masters/user/Users_List.dart';
+import '../Quotation/QuotationEntry/item_listPage.dart';
 import '../Quotation/QuotationEntry/quotation_entry_page.dart';
 import '../Quotation/QuotationFollowUp/followuppage.dart';
 import '../Reports/reports_grid/reports_grid_page.dart';
@@ -90,10 +91,10 @@ class CustomDrawer extends StatelessWidget {
                     label: "Monthly Target",
                     onTap: () => Get.to(TargetListPage()),
                     icon: Icons.tablet),
-                DrawerSubItem(
-                    label: "Product Target",
-                    onTap: () => Get.to(ProductTargetList()),
-                    icon: Icons.local_offer),
+                // DrawerSubItem(
+                //     label: "Product Target",
+                //     onTap: () => Get.to(ProductTargetList()),
+                //     icon: Icons.local_offer),
               ],
             ),
             _buildDivider(),
@@ -137,63 +138,64 @@ class CustomDrawer extends StatelessWidget {
                 label: "Attendance",
                 onTap: () => navigateToCampaign(context)),
             _buildDivider(),
-            DrawerItem(
-                icon: Icons.task,
-                label: "My Task",
-                onTap: () => Get.to(CalendarPage())),
-            _buildDivider(),
-            ExpandableDrawerItem(
-              icon: Icons.security,
-              label: "Authorization",
-              children: [
-                DrawerSubItem(
-                    label: "Expenses",
-                    onTap: () => navigateToExpenseAuthorization(context),
-                    icon: Icons.attach_money),
-                DrawerSubItem(
-                    label: "Payment",
-                    onTap: () => navigateToPayementAuthorization(context),
-                    icon: Icons.payment),
-                DrawerSubItem(
-                    label: "Planner",
-                    onTap: () => _navigateToSubItem2(context),
-                    icon: Icons.calendar_today),
-                DrawerSubItem(
-                    label: "Pending Order for Approval",
-                    onTap: () => _navigatePendingOrder(context),
-                    icon: Icons.pending),
-              ],
-            ),
-            _buildDivider(),
-            ExpandableDrawerItem(
-              icon: Icons.more_horiz,
-              label: "More",
-              children: [
-                DrawerSubItem(
-                    label: "Client History",
-                    onTap: () => _navigateToSubItemA(context),
-                    icon: Icons.history),
-                DrawerSubItem(
-                    label: "Expenses",
-                    onTap: () => _navigateExpenseEntry(),
-                    icon: Icons.attach_money),
-                DrawerSubItem(
-                    label: "Payment Collection",
-                    onTap: () => navigateTopayementCollection(context),
-                    icon: Icons.payment),
-              ],
-            ),
-            _buildDivider(),
+            // DrawerItem(
+            //     icon: Icons.task,
+            //     label: "My Task",
+            //     onTap: () => Get.to(CalendarPage())
+            // ),
+            // _buildDivider(),
+            // ExpandableDrawerItem(
+            //   icon: Icons.security,
+            //   label: "Authorization",
+            //   children: [
+            //     DrawerSubItem(
+            //         label: "Expenses",
+            //         onTap: () => navigateToExpenseAuthorization(context),
+            //         icon: Icons.attach_money),
+            //     DrawerSubItem(
+            //         label: "Payment",
+            //         onTap: () => navigateToPayementAuthorization(context),
+            //         icon: Icons.payment),
+            //     DrawerSubItem(
+            //         label: "Planner",
+            //         onTap: () => _navigateToSubItem2(context),
+            //         icon: Icons.calendar_today),
+            //     DrawerSubItem(
+            //         label: "Pending Order for Approval",
+            //         onTap: () => _navigatePendingOrder(context),
+            //         icon: Icons.pending),
+            //   ],
+            // ),
+            // _buildDivider(),
+            // ExpandableDrawerItem(
+            //   icon: Icons.more_horiz,
+            //   label: "More",
+            //   children: [
+            //     DrawerSubItem(
+            //         label: "Client History",
+            //         onTap: () => _navigateToSubItemA(context),
+            //         icon: Icons.history),
+            //     DrawerSubItem(
+            //         label: "Expenses",
+            //         onTap: () => _navigateExpenseEntry(),
+            //         icon: Icons.attach_money),
+            //     DrawerSubItem(
+            //         label: "Payment Collection",
+            //         onTap: () => navigateTopayementCollection(context),
+            //         icon: Icons.payment),
+            //   ],
+            // ),
+            // _buildDivider(),
             DrawerItem(
                 icon: Icons.analytics,
                 label: "Lead Center",
                 onTap: () => Get.to(() => LeadCenterPage())),
             _buildDivider(),
-            DrawerItem(
-                icon: Icons.analytics,
-                label: "Maps",
-                onTap: () => Get.to(LiveMapScreen())),
-            _buildDivider(),
+            // DrawerItem(
+            //     icon: Icons.analytics,
+            //     label: "Maps",
+            //     onTap: () => Get.to(LiveMapScreen())),
+            // _buildDivider(),
 
             DrawerItem(
                 icon: Icons.analytics,
@@ -204,7 +206,7 @@ class CustomDrawer extends StatelessWidget {
             DrawerItem(
                 icon: Icons.analytics,
                 label: "Profile",
-                onTap: () => Get.to(ProfilePage())),
+                onTap: () => Get.toNamed(Routes.PROFILE)),
             DrawerItem(
                 icon: Icons.login_outlined,
                 label: "Log Out",
@@ -217,14 +219,14 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.contact_mail_outlined,
                 label: "Import Contact",
                 onTap: () => Get.toNamed(Routes.CONTACT_IMPORT)),
-            DrawerItem(
-                icon: Icons.contact_mail_outlined,
-                label: "Import Excel",
-                onTap: () => Get.toNamed(Routes.EXCEL_IMPORT)),
-            DrawerItem(
-                icon: Icons.contact_mail_outlined,
-                label: "Chat",
-                onTap: () => Get.to(CustomersScreen())),
+            // DrawerItem(
+            //     icon: Icons.contact_mail_outlined,
+            //     label: "Import Excel",
+            //     onTap: () => Get.toNamed(Routes.EXCEL_IMPORT)),
+            // DrawerItem(
+            //     icon: Icons.contact_mail_outlined,
+            //     label: "Chat",
+            //     onTap: () => Get.to(CustomersScreen())),
           ],
         ),
       ),
@@ -266,7 +268,11 @@ class CustomDrawer extends StatelessWidget {
   }
 
   void _navigatoQuotationEntry() {
-    Get.to(QuotationEntryPage());
+    Get.to(
+      () => QuotationPage(),
+      transition: Transition.rightToLeftWithFade,
+      duration: const Duration(milliseconds: 300),
+    );
   }
 
   void _navigateToSubItem2(BuildContext context) {
@@ -290,7 +296,7 @@ class CustomDrawer extends StatelessWidget {
   }
 
   void navigateToCampaign(BuildContext context) {
-    Get.to(AttendancePage());
+    Get.toNamed(Routes.ATTENDANCE);
     // Navigate to Sub-item 2
   }
 

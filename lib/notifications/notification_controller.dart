@@ -1,8 +1,8 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../Tasks/taskDeatails/task_details_page.dart';
-import '../auth/login/login_controller.dart';
 import '../data/api/api_client.dart';
 import '../google_service/google_calendar_helper.dart';
 import '../utils/routes.dart';
@@ -11,18 +11,90 @@ import '../widgets/custom_snckbar.dart';
 import 'notification_db.dart';
 import 'notification_model.dart';
 
-Future<void> initializeStorage() async {
-  await GetStorage.init();
+// Top-level function for background message handling
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('📩 Background Notification Received: ${message.messageId}');
+
+  try {
+    // Initialize the database directly
+    await NotificationDatabaseHelper.initDatabase();
+
+    if (message.notification != null) {
+      // Create notification object from payload structure
+      final notification = _createNotificationFromMessage(message);
+
+      // Insert directly into the database
+      final result =
+          await NotificationDatabaseHelper.insertNotification(notification);
+      print('✅ Background notification saved to SQLite with result: $result');
+
+      // Handle calendar event if needed
+      if (message.data['Iscalendar'] == "yes") {
+        // Initialize GetStorage for calendar check
+        await GetStorage.init();
+        final box = GetStorage();
+        if (box.read(StorageTags.loggedIn) == 'yes') {
+          try {
+            final client = await getGoogleAuthClient();
+            if (client != null) {
+              final isScheduled =
+                  await ApiClient().scheduleTaskOnGoogleCalendar(
+                client: client,
+                title: message.notification?.title ?? 'Untitled Event',
+                location: message.data['MyCalendar_Location'] ?? '',
+                description: message.notification?.body ?? '',
+                startDate: message.data['MyCalendar_Startdate'] ?? '',
+                endDate: message.data['MyCalendar_Enddate'] ?? '',
+              );
+              print(isScheduled
+                  ? '✅ Calendar event created in background'
+                  : '⚠️ Failed to create calendar event in background');
+            }
+          } catch (e) {
+            print('❌ Error creating calendar event in background: $e');
+          }
+        }
+      }
+    }
+
+    // Small delay to ensure operations complete
+    await Future.delayed(Duration(milliseconds: 500));
+  } catch (e, stackTrace) {
+    print('❌ Error in background handler: $e');
+    print('Stack trace: $stackTrace');
+  }
+}
+
+// Helper function to create notification from message
+AppNotification _createNotificationFromMessage(RemoteMessage message) {
+  return AppNotification(
+    id: message.messageId ?? DateTime.now().toString(),
+    title: message.notification?.title ?? '',
+    description: message.notification?.body ?? 'No Description',
+    timestamp: DateTime.now(),
+    navigationTarget: message.data['NavigationTarget'] ?? "",
+    navigationId: message.data['Navigationid'] ?? "",
+    imageUrl: message.notification?.android?.imageUrl ??
+        message.notification?.apple?.imageUrl,
+    notificationType: message.data['NotificationType'],
+    notificationAction: message.data['NotificationAction'],
+    isCalendar: message.data['Iscalendar'],
+    location: message.data['MyCalendar_Location'],
+    startDate: message.data['MyCalendar_Startdate'],
+    endDate: message.data['MyCalendar_Enddate'],
+    userId: message.data['UserId'],
+    priority: message.data['Priority'],
+    popupDataActionId: message.data['PopupData_ActionId'],
+    popupDataActionType: message.data['PopupData_ActionType'],
+    popupDataRemark: message.data['PopupDataRemark'],
+    popupAdditionalData: message.data['PopUpAdditionalData'],
+  );
 }
 
 class NotificationController extends GetxController {
   final notifications = <AppNotification>[].obs;
-  late String taskId;
   final box = GetStorage();
-  final _isProcessingLogout = false.obs;
-
-  static const String LOGOUT_LOCK_KEY = 'logout_lock';
-  static const Duration LOCK_TIMEOUT = Duration(seconds: 10);
 
   @override
   void onInit() {
@@ -31,6 +103,9 @@ class NotificationController extends GetxController {
     loadNotifications();
   }
 
+// The current filter Rx variable
+  final RxString currentFilter = 'All'.obs;
+  final RxList<AppNotification> searchResults = <AppNotification>[].obs;
   Future<void> loadNotifications() async {
     try {
       final notificationList =
@@ -56,6 +131,17 @@ class NotificationController extends GetxController {
     }
   }
 
+  void setFilter(String filter) {
+    currentFilter.value = filter;
+    searchResults.clear();
+  }
+
+  void setSearchResults(List<AppNotification> results) {
+    searchResults.assignAll(results);
+    // Show a custom message for search
+    currentFilter.value = 'Search';
+  }
+
   void _initializeFCM() async {
     try {
       FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -74,8 +160,10 @@ class NotificationController extends GetxController {
 
         FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
         FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+
+        // Use the global top-level function
         FirebaseMessaging.onBackgroundMessage(
-            _firebaseMessagingBackgroundHandler);
+            firebaseMessagingBackgroundHandler);
 
         print('✅ FCM initialized successfully');
       } else {
@@ -86,303 +174,267 @@ class NotificationController extends GetxController {
     }
   }
 
-  static Future<bool> _acquireLock(GetStorage box) async {
-    final lockValue = DateTime.now().toIso8601String();
-
-    // Try to acquire lock
-    if (await box.read(LOGOUT_LOCK_KEY) != null) {
-      // Check if lock is stale
-      final existingLock = await box.read(LOGOUT_LOCK_KEY);
-      final lockTime = DateTime.parse(existingLock);
-      if (DateTime.now().difference(lockTime) > LOCK_TIMEOUT) {
-        await box.write(LOGOUT_LOCK_KEY, lockValue);
-        return true;
-      }
-      return false;
-    }
-
-    await box.write(LOGOUT_LOCK_KEY, lockValue);
-    return true;
-  }
-
-  static Future<void> _releaseLock(GetStorage box) async {
-    await box.remove(LOGOUT_LOCK_KEY);
-  }
-
-  static Future<void> _handleBackgroundNotification(
-      RemoteMessage message, GetStorage box) async {
-    try {
-      if (message.notification != null) {
-        final notification = AppNotification(
-          id: message.messageId ?? DateTime.now().toString(),
-          title: message.notification!.title ?? '',
-          description: message.notification!.body ?? 'No Description',
-          timestamp: DateTime.now(),
-          navigationTarget: message.data['navigation_target'] ?? '',
-          navigationId: message.data['navigation_id'] ?? '',
-          imageUrl: message.data['image'] ?? '',
-        );
-
-        await NotificationDatabaseHelper.insertNotification(notification);
-        print('✅ Background notification saved: ${notification.title}');
-
-        if (message.data['isCalender'] == "yes" && await _checkUserLoggedIn()) {
-          await _handleCalendarEvent(message);
-        }
-      }
-    } catch (e) {
-      print('❌ Error processing background notification: $e');
-    }
-  }
-
-  static Future<void> _firebaseMessagingBackgroundHandler(
-      RemoteMessage message) async {
-    print('📩 Background Notification Received: ${message.messageId}');
-
-    await GetStorage.init();
-    final box = GetStorage();
-
-    if (message.notification?.title?.toLowerCase() == "logout") {
-      await box.write(StorageTags.loggedIn, "no");
-      print(box.read(StorageTags.loggedIn));
-      await _handleBackgroundLogout(box);
-    } else {
-      await _handleBackgroundNotification(message, box);
-    }
-  }
-
-  static Future<void> _handleBackgroundLogout(GetStorage box) async {
-    try {
-      final lockAcquired = await _acquireLock(box);
-      if (!lockAcquired) {
-        print('⚠️ Could not acquire background logout lock');
-        return;
-      }
-
-      try {
-        // Create a temporary storage for important data
-        final fcmToken = box.read('fcm_token');
-
-        // Clear all data first
-        await box.erase();
-
-        // Write logout state AFTER clearing
-        await Future.wait([
-          // Restore FCM token
-          if (fcmToken != null) box.write('fcm_token', fcmToken),
-
-          // Set multiple logout indicators
-          box.write(StorageTags.loggedIn, "no"),
-          box.write('logged_in_backup', "no"), // Backup logout state
-          box.write(StorageTags.PENDING_LOGOUT, "yes"),
-          box.write('backup_logout_flag', "yes"),
-          box.write('force_logout_flag', "yes"),
-          box.write(
-              StorageTags.LOGOUT_TIMESTAMP, DateTime.now().toIso8601String()),
-        ]);
-
-        // Set state data AFTER setting primary flags
-        final stateData = {
-          'logout_flag': "yes",
-          'backup_logout_flag': "yes",
-          'logout_timestamp': DateTime.now().toIso8601String(),
-          'force_logout': true,
-          'logged_in': "no", // Add login state to app_state
-        };
-        await box.write('app_state', stateData);
-
-        // Verify the logout state
-        final verificationData = {
-          'login_state': box.read(StorageTags.loggedIn),
-          'login_backup': box.read('logged_in_backup'),
-          'pending_logout': box.read(StorageTags.PENDING_LOGOUT),
-          'backup_flag': box.read('backup_logout_flag'),
-          'force_logout': box.read('force_logout_flag'),
-          'app_state': box.read('app_state'),
-        };
-
-        print('🔍 Logout state verification: $verificationData');
-
-        // Double-check login state
-        final finalLoginState = box.read(StorageTags.loggedIn);
-        print('📊 Final login state check: $finalLoginState');
-      } finally {
-        await _releaseLock(box);
-      }
-    } catch (e) {
-      print('❌ Background logout error: $e');
-      await _releaseLock(box);
-    }
-  }
-
-  Future<void> forceLogout() async {
-    try {
-      final fcmToken = box.read('fcm_token');
-      await box.erase();
-      if (fcmToken != null) {
-        await box.write('fcm_token', fcmToken);
-      }
-      await box.write(StorageTags.loggedIn, "no");
-      await Get.offAllNamed('/login');
-    } catch (e) {
-      print('❌ Force logout error: $e');
-    }
-  }
-
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    if (_isProcessingLogout.value) return;
+    print('📬 Foreground Notification Received: ${message.messageId}');
 
-    if (message.notification?.title?.toLowerCase() == "logout") {
-      _isProcessingLogout.value = true;
-      try {
-        await _logoutUser();
-      } finally {
-        _isProcessingLogout.value = false;
-      }
-      return;
-    }
+    // Always save the notification to database regardless of action type
+    await _saveNotification(message);
 
-    await _processNotification(message);
+    // For foreground messages:
+    // - Popup actions can be shown immediately
+    // - Navigation actions should only happen when notification is tapped
+    final action = message.data['NotificationAction'] ?? '';
+
+    // Only handle popup notifications immediately in foreground
+    // if (action == 'Popup') {
+    //   _handlePopupNotification(message);
+    // }
+
+    // Process calendar events if needed regardless of action type
+    _processCalendarEvent(message);
   }
 
   Future<void> _handleNotificationTap(RemoteMessage message) async {
     print('👆 Notification Tapped: ${message.messageId}');
 
-    if (message.notification?.title?.toLowerCase() == "logout") {
-      await _logoutUser();
-      return;
+    // Always save the notification to database
+    await _saveNotification(message);
+
+    // Process based on action type
+    final action = message.data['NotificationAction'] ?? '';
+
+    if (action == 'Navigation') {
+      _handleNavigation(message);
+    } else if (action == 'Popup') {
+      _handlePopupNotification(message);
+    } else {
+      print('📌 Normal notification tapped, no special action required');
     }
 
-    await _processNotification(message);
-    _handleNavigation(message);
+    // Process calendar events if needed
+    _processCalendarEvent(message);
   }
 
-  Future<void> _processNotification(RemoteMessage message) async {
+  Future<void> _saveNotification(RemoteMessage message) async {
     if (message.notification != null) {
       try {
-        final notification = AppNotification(
-          id: message.messageId ?? DateTime.now().toString(),
-          title: message.notification!.title ?? '',
-          description: message.notification!.body ?? 'No Description',
-          timestamp: DateTime.now(),
-          navigationTarget: message.data['navigation_target'] ?? '',
-          navigationId: message.data['navigation_id'] ?? '',
-          imageUrl: message.data['image'] ?? '',
-        );
+        // Create notification using helper function
+        final notification = _createNotificationFromMessage(message);
 
         await addNotification(notification);
-
-        if (message.data['isCalender'] == "yes" && await _checkUserLoggedIn()) {
-          await _handleCalendarEvent(message);
-        }
       } catch (e) {
-        print('❌ Error processing notification: $e');
+        print('❌ Error saving notification: $e');
       }
     }
   }
 
-  static Future<void> _handleCalendarEvent(RemoteMessage message) async {
+  void _processCalendarEvent(RemoteMessage message) {
+    // Only process calendar events if Iscalendar is set to "yes"
+    if (message.data['Iscalendar'] == "yes") {
+      _checkUserLoggedIn().then((isLoggedIn) {
+        if (isLoggedIn) {
+          _handleCalendarEvent(message);
+        }
+      });
+    }
+  }
+
+  void _handlePopupNotification(RemoteMessage message) {
+    try {
+      final actionType = message.data['PopupData_ActionType'] ?? "";
+      final actionId = message.data['PopupData_ActionId'] ?? "";
+      final remark = message.data['PopupDataRemark'] ?? "";
+
+      print('📱 Showing popup notification: $actionType, ID: $actionId');
+
+      Get.dialog(
+        Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (message.notification?.android?.imageUrl != null ||
+                    message.notification?.apple?.imageUrl != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      message.notification?.android?.imageUrl ??
+                          message.notification?.apple?.imageUrl ??
+                          '',
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 100,
+                          color: Colors.grey[200],
+                          child: Icon(Icons.image_not_supported),
+                        );
+                      },
+                    ),
+                  ),
+                SizedBox(height: 16),
+                Text(
+                  message.notification?.title ?? 'Notification',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  message.notification?.body ?? '',
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 8),
+                if (remark.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Note: $remark',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Get.back(),
+                      child: Text('Dismiss'),
+                    ),
+                    SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Handle popup action based on type
+                        _handlePopupAction(
+                          actionType,
+                          actionId,
+                          message.data['PopUpAdditionalData'] ?? '',
+                        );
+                        Get.back();
+                      },
+                      child: Text(_getActionButtonText(actionType)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      print('❌ Error handling popup notification: $e');
+    }
+  }
+
+  String _getActionButtonText(String actionType) {
+    switch (actionType) {
+      case 'Approval':
+        return 'Approve';
+      case 'PaymentCollection':
+        return 'Process Payment';
+      case 'ExpenseApproval':
+        return 'Review Expense';
+      default:
+        return 'Take Action';
+    }
+  }
+
+  void _handlePopupAction(
+    String actionType,
+    String actionId,
+    String additionalData,
+  ) {
+    print('🔘 Handling popup action: $actionType, ID: $actionId');
+
+    // Process the action based on type
+    switch (actionType) {
+      case 'Approval':
+        _processApproval(actionId, additionalData);
+        break;
+      case 'PaymentCollection':
+        _processPaymentCollection(actionId, additionalData);
+        break;
+      case 'ExpenseApproval':
+        _processExpenseApproval(actionId, additionalData);
+        break;
+      default:
+        print('Unknown action type: $actionType');
+    }
+  }
+
+  void _processApproval(String actionId, String additionalData) {
+    print('Processing approval with ID: $actionId');
+    // Implement your approval logic here
+
+    // Show success message
+    CustomSnack.show(
+      content: "Approval processed successfully",
+      snackType: SnackType.success,
+    );
+  }
+
+  void _processPaymentCollection(String actionId, String additionalData) {
+    print('Processing payment collection with ID: $actionId');
+    // Implement your payment collection logic here
+
+    // Show success message
+    CustomSnack.show(
+      content: "Payment collection initiated",
+      snackType: SnackType.success,
+    );
+  }
+
+  void _processExpenseApproval(String actionId, String additionalData) {
+    print('Processing expense approval with ID: $actionId');
+    // Implement your expense approval logic here
+
+    // Show success message
+    CustomSnack.show(
+      content: "Expense approval processed",
+      snackType: SnackType.success,
+    );
+  }
+
+  Future<void> _handleCalendarEvent(RemoteMessage message) async {
     try {
       final client = await getGoogleAuthClient();
       if (client != null) {
         final isScheduled = await ApiClient().scheduleTaskOnGoogleCalendar(
           client: client,
-          title: message.data['title'] ?? 'Untitled Event',
-          location: message.data['location'] ?? '',
-          description: message.data['description'] ?? '',
-          startDate: message.data['start_date'] ?? '',
-          endDate: message.data['end_date'] ?? '',
+          title: message.notification?.title ?? 'Untitled Event',
+          location: message.data['MyCalendar_Location'] ?? '',
+          description: message.notification?.body ?? '',
+          startDate: message.data['MyCalendar_Startdate'] ?? '',
+          endDate: message.data['MyCalendar_Enddate'] ?? '',
         );
 
-        print(isScheduled
-            ? '✅ Calendar event created'
-            : '⚠️ Failed to create calendar event');
+        if (isScheduled) {
+          print('✅ Calendar event created');
+          CustomSnack.show(
+            content: "Event added to your calendar",
+            snackType: SnackType.success,
+          );
+        } else {
+          print('⚠️ Failed to create calendar event');
+        }
       }
     } catch (e) {
       print('❌ Error creating calendar event: $e');
     }
   }
 
-  static Future<bool> _checkUserLoggedIn() async {
-    final box = GetStorage();
+  Future<bool> _checkUserLoggedIn() async {
     return box.read(StorageTags.loggedIn) == 'yes';
-  }
-
-  Future<void> _logoutUser() async {
-    try {
-      if (!Get.isRegistered<LoginController>()) {
-        await Get.put(LoginController());
-      }
-
-      final fcmToken = box.read('fcm_token');
-
-      // Clear storage but preserve FCM token
-      await box.erase();
-      if (fcmToken != null) {
-        await box.write('fcm_token', fcmToken);
-      }
-
-      // Navigate to login
-      await Get.offAllNamed('/login');
-
-      CustomSnack.show(
-        content: "You have been logged out",
-        snackType: SnackType.success,
-      );
-
-      print('✅ Logout completed successfully');
-    } catch (e) {
-      print("❌ Logout error: $e");
-      CustomSnack.show(
-        content: "Failed to log out. Please try again.",
-        snackType: SnackType.error,
-      );
-      rethrow;
-    }
-  }
-
-  Future<bool> checkPendingLogout() async {
-    if (_isProcessingLogout.value) return false;
-
-    try {
-      final lockAcquired = await _acquireLock(box);
-      if (!lockAcquired) {
-        print('⚠️ Could not acquire lock for pending logout check');
-        return false;
-      }
-
-      try {
-        final savedState = box.read('app_state') ?? {};
-        final isPendingLogout = box.read(StorageTags.PENDING_LOGOUT) == "yes" ||
-            box.read('backup_logout_flag') == "yes" ||
-            savedState['logout_flag'] == "yes" ||
-            savedState['backup_logout_flag'] == "yes";
-
-        if (isPendingLogout) {
-          _isProcessingLogout.value = true;
-
-          // Clear logout flags
-          await Future.wait([
-            box.remove(StorageTags.PENDING_LOGOUT),
-            box.remove(StorageTags.LOGOUT_TIMESTAMP),
-            box.remove('backup_logout_flag'),
-            box.remove('app_state'),
-          ]);
-
-          await _logoutUser();
-          return true;
-        }
-        return false;
-      } finally {
-        await _releaseLock(box);
-        _isProcessingLogout.value = false;
-      }
-    } catch (e) {
-      print('❌ Error checking pending logout: $e');
-      _isProcessingLogout.value = false;
-      await _releaseLock(box);
-      return false;
-    }
   }
 
   Future<void> addNotification(AppNotification notification) async {
@@ -420,16 +472,25 @@ class NotificationController extends GetxController {
   }
 
   void _handleNavigation(RemoteMessage message) {
-    String navigationTarget = message.data['navigation_target'] ?? '';
-    String navigationId = message.data['navigation_id'] ?? '';
-    navigateToPage(navigationTarget, navigationId);
+    String navigationTarget = message.data['NavigationTarget'] ?? '';
+    String navigationId = message.data['Navigationid'] ?? '';
+
+    print('🧭 Handling navigation: Target=$navigationTarget, ID=$navigationId');
+
+    // Only navigate if we have a target
+    if (navigationTarget.isNotEmpty) {
+      navigateToPage(navigationTarget, navigationId);
+    } else {
+      print('⚠️ Navigation requested but no target specified');
+    }
   }
 
   void navigateToPage(String navigationTarget, String? navigationId) {
     try {
+      print(navigationTarget);
       switch (navigationTarget) {
         case "task_detail_page":
-          if (navigationId != null) {
+          if (navigationId != null && navigationId.isNotEmpty) {
             print("📄 Navigating to task detail: $navigationId");
             Get.to(() => TaskDetailPage(), arguments: {
               "taskId": navigationId,
@@ -449,6 +510,10 @@ class NotificationController extends GetxController {
           break;
         default:
           print("⚠️ Unknown navigation target: $navigationTarget");
+          CustomSnack.show(
+            content: "Unknown navigation target",
+            snackType: SnackType.warning,
+          );
       }
     } catch (e) {
       print('❌ Navigation error: $e');
@@ -456,6 +521,32 @@ class NotificationController extends GetxController {
         content: "Failed to navigate to the requested page",
         snackType: SnackType.error,
       );
+    }
+  }
+}
+
+// Add these methods to your NotificationController class
+extension NotificationControllerExtension on NotificationController {
+  RxList<AppNotification> get filteredNotifications {
+    if (searchResults.isNotEmpty) {
+      return searchResults;
+    }
+
+    switch (currentFilter.value) {
+      case 'Unread':
+        return notifications.where((n) => !n.isRead).toList().obs;
+      case 'task':
+      case 'alert':
+      case 'reminder':
+      case 'approval':
+        return notifications
+            .where((n) =>
+                (n.notificationType ?? '').toLowerCase() == currentFilter.value)
+            .toList()
+            .obs;
+      case 'All':
+      default:
+        return notifications;
     }
   }
 }

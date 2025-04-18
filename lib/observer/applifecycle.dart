@@ -56,8 +56,8 @@ class AppLifecycleHandler extends GetxController with WidgetsBindingObserver {
           await _initializeControllers();
           await Future.delayed(const Duration(milliseconds: 500));
 
-          final hasLogout = await notificationController.checkPendingLogout();
-          if (hasLogout) return;
+          // final hasLogout = await notificationController.checkPendingLogout();
+          // if (hasLogout) return;
 
           success = true;
         } catch (e) {

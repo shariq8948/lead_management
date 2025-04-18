@@ -120,12 +120,56 @@ class ApiClient extends GetConnect implements GetxService {
     Options? options,
   }) async {
     try {
+      print(data);
       final response = await dio.post(
         path,
         data: data,
         queryParameters: queryParameters,
         options: options,
       );
+      print(response);
+      return response.data;
+    } on DioException catch (e) {
+      // _handleDioError(e);
+    }
+  }
+
+  Future<dynamic> putg(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      print(data);
+      final response = await dio.put(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+      print(response);
+      return response.data;
+    } on DioException catch (e) {
+      // _handleDioError(e);
+    }
+  }
+
+  Future<dynamic> deleteg(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      print(data);
+      final response = await dio.delete(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+      print(response);
       return response.data;
     } on DioException catch (e) {
       // _handleDioError(e);
@@ -3112,7 +3156,7 @@ class ApiClient extends GetConnect implements GetxService {
   }) async {
     try {
       final Map<String, dynamic> requestBody = {
-        "leadId": "1712",
+        "leadId": leadId,
         "title": title,
         "CheckinDatetime": from,
         "CheckoutDatetime": to,
@@ -3120,13 +3164,13 @@ class ApiClient extends GetConnect implements GetxService {
         "description": description,
         "Remark": outomeRemark,
         "entrytype": "Meeting",
-        "userid": box.read("UserId"),
+        "userid": box.read(StorageTags.userId),
         "Assigntoid": assignTo,
         "REMINDERTIME": "00:30",
         "Customerid": "0",
         "Prospectid": 0
       };
-
+      print(requestBody);
       final response = await dio.post(
         endPoint,
         data: requestBody,
@@ -3163,19 +3207,19 @@ class ApiClient extends GetConnect implements GetxService {
       final Map<String, dynamic> requestBody = {
         "leadId": leadId,
         "vdate": date,
-        "activitytime": "2025-02-22 00:00",
+        "activitytime": date,
         "CallStatusId": "1",
         "remark": description,
         "activitytype": CallType,
-        "iscall": 1,
+        "iscall": "1",
         "entrytype": "CallActivity",
-        "userid": box.read("UserId"),
+        "userid": box.read(StorageTags.userId),
         "Assigntoid": assignTo,
-        "REMINDERTIME": reminder,
+        "REMINDERTIME": "00:30",
         "Customerid": "0",
-        "Prospectid": 0
+        "Prospectid": "0"
       };
-
+      print(requestBody);
       final response = await dio.post(
         endPoint,
         data: requestBody,

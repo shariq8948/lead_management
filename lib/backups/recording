@@ -1,0 +1,231 @@
+import 'dart:async';
+import 'package:get/get.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
+import 'package:geocoding/geocoding.dart';
+
+import 'handler.dart';
+
+class MeetingController extends GetxController {
+  var location = ''.obs; // Observable for location (address)
+  var isCheckedIn = false.obs; // Observable for check-in/out state
+  var checkInTime = ''.obs; // Observable for check-in time
+  var checkOutTime = ''.obs; // Observable for check-out time
+  var isRecording = false.obs; // Observable for recording state
+  var isPaused = false.obs; // Observable to track pause state
+  var elapsedTime = 0.obs; // Time in seconds
+
+  // Flag to prevent redundant location fetch requests
+  RxBool isFetchingLocation = false.obs;
+
+  // Define a maximum recording duration (e.g., 10 minutes)
+  Duration maxDuration = Duration(minutes: 10);
+  Timer? _maxDurationTimer;
+
+  // Reference to our recording handler
+  late final MeetingRecordingHandler _recordingHandler;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeHandler();
+    _loadSavedState();
+  }
+
+  // Initialize the recording handler
+  Future<void> _initializeHandler() async {
+    await MeetingRecordingHandler.init();
+    _recordingHandler = Get.find<MeetingRecordingHandler>();
+
+    // Set up handlers for recording state changes
+    _recordingHandler.isRecording.listen((value) {
+      isRecording.value = value;
+    });
+
+    _recordingHandler.isPaused.listen((value) {
+      isPaused.value = value;
+    });
+
+    _recordingHandler.elapsedTime.listen((value) {
+      elapsedTime.value = value;
+    });
+  }
+
+  // Load saved state from persistent storage
+  Future<void> _loadSavedState() async {
+    final savedState = _recordingHandler.loadCheckInState();
+
+    isCheckedIn.value = savedState['isCheckedIn'] ?? false;
+    checkInTime.value = savedState['checkInTime'] ?? '';
+    checkOutTime.value = savedState['checkOutTime'] ?? '';
+    location.value = savedState['location'] ?? '';
+  }
+
+  // Fetch current location (latitude and longitude converted to address)
+  Future<void> fetchLocation() async {
+    if (isFetchingLocation.value)
+      return; // Avoid fetching location if already in progress
+    isFetchingLocation.value = true;
+
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      location.value = 'Location services are disabled.';
+      isFetchingLocation.value = false;
+      return;
+    }
+
+    // Check location permissions
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        location.value = 'Location permissions are denied.';
+        isFetchingLocation.value = false;
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      location.value = 'Location permissions are permanently denied.';
+      isFetchingLocation.value = false;
+      return;
+    }
+
+    // Get current position
+    Position position = await Geolocator.getCurrentPosition();
+
+    // Reverse geocode: convert latitude and longitude to a human-readable address
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      // Extract the address from the placemark
+      Placemark place = placemarks[0];
+      location.value =
+          '${place.street},${place.subLocality}(${place.postalCode}),${place.locality},${place.administrativeArea},${place.country}'; // Update observable with address
+    } catch (e) {
+      location.value = 'Unable to fetch address.';
+    } finally {
+      isFetchingLocation.value = false;
+    }
+  }
+
+  // Toggle Check-In/Check-Out
+  Future<void> toggleCheckIn() async {
+    if (isCheckedIn.value) {
+      // Check Out
+      isCheckedIn.value = false;
+      checkOutTime.value = _getCurrentTime();
+
+      // If recording is active, stop it
+      if (isRecording.value) {
+        await toggleRecording(); // This will stop the recording
+      }
+    } else {
+      // Check In
+      // Fetch location before setting checked-in state
+      await fetchLocation();
+      isCheckedIn.value = true;
+      checkInTime.value = _getCurrentTime();
+      checkOutTime.value = ''; // Reset check-out time
+    }
+
+    // Save check-in state
+    await _recordingHandler.saveCheckInState(isCheckedIn.value,
+        checkInTime.value, checkOutTime.value, location.value);
+  }
+
+  // Get current time as a formatted string
+  String _getCurrentTime() {
+    final now = DateTime.now();
+    return DateFormat('hh:mm a').format(now);
+  }
+
+  // Start/stop audio recording
+  Future<void> toggleRecording() async {
+    if (isRecording.value) {
+      // Stop recording
+      final path = await _recordingHandler.stopRecording();
+
+      if (path != null) {
+        Get.snackbar('Recording Saved', 'File saved at: $path');
+      } else {
+        Get.snackbar('Recording Stopped', 'No file was saved.');
+      }
+      _maxDurationTimer
+          ?.cancel(); // Cancel max duration timer when recording stops
+    } else {
+      // Start new recording
+      await _recordingHandler.startNewRecording();
+
+      // Start a timer to stop recording when the max duration is reached
+      _startMaxDurationTimer();
+    }
+  }
+
+  // Pause the recording
+  Future<void> togglePause() async {
+    if (isRecording.value && !isPaused.value) {
+      await _recordingHandler.pauseRecording();
+    } else if (isRecording.value && isPaused.value) {
+      await _recordingHandler.resumePausedRecording();
+    }
+  }
+
+  // Start a timer to stop recording after max duration
+  void _startMaxDurationTimer() {
+    _maxDurationTimer?.cancel(); // Cancel any previous timers
+    _maxDurationTimer = Timer(maxDuration, () async {
+      // Automatically stop recording when max duration is reached
+      await stopRecording();
+      Get.snackbar('Recording Stopped', 'Max recording duration reached.');
+    });
+  }
+
+  // Stop recording
+  Future<void> stopRecording() async {
+    await _recordingHandler.stopRecording();
+    _maxDurationTimer?.cancel(); // Cancel max duration timer
+  }
+
+  String get totalHours {
+    if (checkInTime.value.isEmpty || checkOutTime.value.isEmpty) {
+      return "00:00";
+    }
+
+    try {
+      // Parse times into DateTime objects
+      DateTime format = DateFormat("hh:mm a").parse(checkInTime.value);
+      String formattedCheckIn = DateFormat("HH:mm").format(format);
+
+      format = DateFormat("hh:mm a").parse(checkOutTime.value);
+      String formattedCheckOut = DateFormat("HH:mm").format(format);
+
+      DateTime checkIn = DateFormat("HH:mm").parse(formattedCheckIn);
+      DateTime checkOut = DateFormat("HH:mm").parse(formattedCheckOut);
+
+      // Calculate the duration
+      Duration difference = checkOut.difference(checkIn);
+      int hours = difference.inHours;
+      int minutes = difference.inMinutes % 60;
+
+      // Return formatted time
+      return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}";
+    } catch (e) {
+      print("❌ Error calculating total hours: $e");
+      return "00:00"; // Fallback in case of parsing errors
+    }
+  }
+
+  @override
+  void onClose() {
+    _maxDurationTimer?.cancel(); // Cancel the max duration timer
+    super.onClose();
+  }
+}

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:leads/Tabs/homepage/model.dart';
 import 'package:leads/alltasks/all_task_page.dart';
 import 'package:leads/notifications/notifications_page.dart';
 import 'package:leads/profile_pages/employee_profile/employee_detail.dart';
@@ -14,6 +15,7 @@ import '../../Tasks/taskDeatails/task_details_page.dart';
 import '../../auth/login/login_controller.dart';
 import '../../data/models/lead_list.dart';
 import '../../google_service/demo_calender.dart';
+import '../../meeting/landingPage/view.dart';
 import '../../meeting/meeting_page.dart';
 import '../../notifications/notification_controller.dart';
 import '../../utils/constants.dart';
@@ -96,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildMeetingButton() {
     return GestureDetector(
-      onTap: () => Get.to(() => MeetingPage()),
+      onTap: () => Get.to(() => ScheduleScreen()),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.amber,
@@ -399,45 +401,7 @@ class _HomeScreenState extends State<HomeScreen>
             height: 10,
           ),
 
-          buildPerformanceMeter(PerformanceMetrics(
-            completedTask: 55.0,
-            leadGenerated: 23.0,
-            attendance: 28.0,
-            salesAchieved: 80.0,
-          )),
-          PerformanceAnalysisChart(performanceData: [
-            PerformanceData(label: 'Calls', achieved: 85, target: 100),
-            PerformanceData(label: 'Meeting', achieved: 75, target: 100),
-            PerformanceData(label: 'Product Sale', achieved: 70, target: 100),
-            PerformanceData(label: 'Follow-up', achieved: 65, target: 100),
-            PerformanceData(label: 'Collection', achieved: 80, target: 100),
-            PerformanceData(label: 'Sales', achieved: 90, target: 100),
-            PerformanceData(label: 'Lead', achieved: 60, target: 100),
-          ]),
-          BuildStats(),
-          SizedBox(
-            height: 10,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: BuildLeadPriorityChartSyncfusion(),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: BuildTaskOverview(),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: BuildExpenseOverviewChart(),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: BuildLeadsByStageChart(),
-          )
-
+          buildStatsdash()
           // Charts section with better layout
           // Obx(() => controller.isTaskSelected.value
           //     ? buildDoughnut()
@@ -584,6 +548,78 @@ class _HomeScreenState extends State<HomeScreen>
         );
       },
     );
+  }
+
+  Widget buildStatsdash() {
+    // Pass controller if not globally accessible
+    return Obx(() {
+      // Wrap the return value with Obx
+      if (controller.isStatsLoading.value) {
+        // Check the isLoading status
+        return Center(child: CustomLoader()); // Show loader if loading
+      } else {
+        // Show the main content if not loading
+        // Add a null check for dashboardData before accessing its properties
+        if (controller.dashboardData.value == null) {
+          // Handle the case where data is not loaded yet but isLoading is false
+          // Maybe show an error message or an empty state
+          return Center(child: Text('No data available'));
+        }
+        // Original Column structure
+        return SingleChildScrollView(
+          // Added SingleChildScrollView to prevent overflow
+          child: Column(
+            children: [
+              buildPerformanceMeter(PerformanceMetrics(
+                // Use null-aware operators or ensure data is not null here
+                completedTask: double.tryParse(controller
+                        .dashboardData.value!.completedTasksPercentage
+                        .toString()) ??
+                    0.0, // Provide default value on parse failure
+                leadGenerated: double.tryParse(controller
+                        .dashboardData.value!.leadGeneratedPercentage
+                        .toString()) ??
+                    0.0, // Provide default value
+                salesAchieved: double.tryParse(controller
+                        .dashboardData.value!.salesAchievedPercentage
+                        .toString()) ??
+                    0.0, // Provide default value
+              )),
+              PerformanceAnalysisChart(
+                // Ensure performanceTracking is not null
+                performanceData:
+                    controller.dashboardData.value!.performanceTracking ??
+                        [], // Provide default empty list
+              ),
+              BuildStats(), // Assuming this widget handles its own state/data
+              SizedBox(
+                height: 10,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child:
+                    BuildLeadPriorityChartSyncfusion(), // Assuming this widget handles its own state/data
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child:
+                    BuildTaskOverview(), // Assuming this widget handles its own state/data
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child:
+                    BuildExpenseOverviewChart(), // Assuming this widget handles its own state/data
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child:
+                    BuildLeadsByStageChart(), // Assuming this widget handles its own state/data
+              )
+            ],
+          ),
+        );
+      }
+    });
   }
 
   void _handleDateRangeSelection(String filter) {
@@ -769,57 +805,67 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Future<void> _showAdvancedDateRangePicker(BuildContext context) async {
-    final DateTimeRange? pickedRange = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      initialDateRange: DateTimeRange(
-        start: DateTime.now().subtract(const Duration(days: 30)),
-        end: DateTime.now(),
-      ),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.deepPurple,
-              primary: Colors.deepPurple,
-            ),
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.deepPurple,
-              foregroundColor: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedRange != null) {
-      controller.selectedFilter.value =
-          'Custom: ${pickedRange.start.day}/${pickedRange.start.month} - ${pickedRange.end.day}/${pickedRange.end.month}';
-
-      controller.fetchFilteredData(
-          startDate: pickedRange.start, endDate: pickedRange.end);
-    }
-  } // Modified date range picker to improve UX
-
   Widget BuildLeadsByStageChart() {
-    final List<Map<String, dynamic>> leadsStageData = [
-      {'stage': 'New', 'leadsCount': 55, 'color': Colors.blue},
-      {'stage': 'Contacted', 'leadsCount': 40, 'color': Colors.green},
-      {
-        'stage': 'Opportunity',
-        'leadsCount': 30,
-        'color': Colors.deepPurpleAccent
-      },
-      {'stage': 'Negotiation', 'leadsCount': 20, 'color': Colors.purple},
-      {'stage': 'Qualified', 'leadsCount': 15, 'color': Colors.pinkAccent},
-      {'stage': 'Disqualified', 'leadsCount': 10, 'color': Colors.redAccent},
-    ];
+    // Assume this function fetches and prepares your data
+    final List<Map<String, dynamic>> leadStageData = prepareLeadStagesData();
+
+    // --- Calculate Dynamic Axis Values ---
+    double maxLeadsCount = 0;
+
+    if (leadStageData.isNotEmpty) {
+      // Find the maximum leadsCount value from the data
+      // Ensure type safety when accessing 'leadsCount'
+      maxLeadsCount = leadStageData
+          .map<double>((data) =>
+              (data['leadsCount'] as num?)?.toDouble() ??
+              0.0) // Safely cast and handle null
+          .reduce(max); // Find the maximum value
+    }
+
+    // Determine a suitable maximum for the Y-axis:
+    // Add some padding (e.g., 15%) and round up to a nice number (e.g., nearest 10)
+    final double yAxisMaximum = (maxLeadsCount * 1.15 / 10).ceil() * 10;
+
+    // Ensure a minimum axis height if all counts are 0 or data is empty
+    final double finalYAxisMaximum =
+        (yAxisMaximum > 0) ? yAxisMaximum : 10; // Default max 10
+
+    // Calculate a suitable interval (aim for around 5 intervals/labels on the axis)
+    // Ensure the interval is at least 1, even for small maximums
+    final double yAxisInterval =
+        (finalYAxisMaximum / 5).ceilToDouble().clamp(1.0, double.infinity);
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // --- Handle Empty Data ---
+        // It's better to show a message than an empty chart
+        if (leadStageData.isEmpty) {
+          return Container(
+            height: 250, // Give the placeholder a height similar to the chart
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              // Use similar decoration for consistency
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                'No lead stage data available.',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          );
+        }
+
+        // --- Build Chart ---
         return Container(
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
@@ -836,6 +882,8 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize
+                .min, // Important for Column in potentially unbounded height
             children: [
               Text(
                 'Number of Leads by Stages',
@@ -846,30 +894,65 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               const SizedBox(height: 16.0),
+              // Use AspectRatio to give the chart a defined size relative to width
               AspectRatio(
-                aspectRatio: 2.0,
+                aspectRatio:
+                    1.8, // Adjust aspect ratio for bar chart (often wider than tall)
                 child: SfCartesianChart(
-                  primaryXAxis: CategoryAxis(isInversed: true),
-                  primaryYAxis: NumericAxis(
-                    minimum: 0,
-                    maximum: 60,
-                    interval: 10,
+                  // X Axis (Category - Lead Stages)
+                  primaryXAxis: CategoryAxis(
+                    isInversed: true, // Stages listed top-to-bottom
+                    majorGridLines: const MajorGridLines(
+                        width: 0), // Hide grid lines for cleaner look
+                    axisLine: const AxisLine(width: 0), // Hide axis line itself
+                    labelStyle: const TextStyle(color: Colors.black54),
                   ),
+                  // Y Axis (Numeric - Lead Count)
+                  primaryYAxis: NumericAxis(
+                    minimum: 0, // Minimum is always 0 for counts
+                    maximum:
+                        finalYAxisMaximum, // Use dynamically calculated maximum
+                    interval:
+                        yAxisInterval, // Use dynamically calculated interval
+                    axisLine: const AxisLine(width: 0), // Hide axis line
+                    majorTickLines:
+                        const MajorTickLines(size: 0), // Hide tick marks
+                    labelStyle: const TextStyle(color: Colors.black54),
+                  ),
+                  // Series (The actual bars)
                   series: <BarSeries<Map<String, dynamic>, String>>[
                     BarSeries<Map<String, dynamic>, String>(
-                      dataSource: leadsStageData,
-                      xValueMapper: (data, _) => data['stage'],
-                      yValueMapper: (data, _) => data['leadsCount'],
-                      pointColorMapper: (data, _) => data['color'],
-                      name: 'Leads',
+                      dataSource: leadStageData,
+                      // Use safe casting and provide defaults for potentially null values
+                      xValueMapper: (data, _) =>
+                          data['stage'] as String? ?? 'Unknown',
+                      yValueMapper: (data, _) =>
+                          (data['leadsCount'] as num?)?.toDouble() ?? 0.0,
+                      pointColorMapper: (data, _) =>
+                          data['color'] as Color?, // Allow null color
+                      name: 'Leads', // Used in tooltip/legend if enabled
                       dataLabelSettings: const DataLabelSettings(
                         isVisible: true,
-                        labelPosition: ChartDataLabelPosition.outside,
+                        labelPosition: ChartDataLabelPosition
+                            .outside, // Position labels outside bars
+                        textStyle: TextStyle(
+                            fontSize: 10,
+                            color: Colors.black87), // Customize label style
                       ),
                       enableTooltip: true,
+                      borderRadius: const BorderRadius.only(
+                          // Optional: Rounded corners for bars
+                          topLeft: Radius.circular(4),
+                          topRight: Radius.circular(4)),
+                      width:
+                          0.7, // Optional: Adjust bar width (fraction of available space)
                     ),
                   ],
-                  tooltipBehavior: TooltipBehavior(enable: true),
+                  tooltipBehavior: TooltipBehavior(
+                    enable: true,
+                    header: '', // Remove default header ('Leads')
+                    format: 'point.x : point.y Leads', // Customize tooltip text
+                  ),
                 ),
               ),
             ],
@@ -877,6 +960,45 @@ class _HomeScreenState extends State<HomeScreen>
         );
       },
     );
+  }
+
+  Color hexToColor(String hexColor) {
+    hexColor = hexColor.toUpperCase().replaceAll('#', '');
+    if (hexColor.length == 6) {
+      hexColor = 'FF' + hexColor; // Add alpha value if not provided
+    }
+    return Color(int.parse(hexColor, radix: 16));
+  }
+
+  // Calculate the maximum Y-axis value based on the data
+  double calculateMaximumYAxis(List<Map<String, dynamic>> data) {
+    if (data.isEmpty) return 10; // Default maximum
+
+    int maxValue = data
+        .map((item) => item['leadsCount'] as int)
+        .reduce((max, value) => max > value ? max : value);
+
+    // Add 10% padding to the maximum value to ensure bars don't touch the top
+    return (maxValue * 1.1).ceilToDouble();
+  }
+
+  List<Map<String, dynamic>> prepareLeadStagesData() {
+    final leadStagesFunnelData =
+        controller.dashboardData.value!.leadStagesFunnelData;
+
+    List<Map<String, dynamic>> result = [];
+    for (int i = 0; i < leadStagesFunnelData.labels.length; i++) {
+      // Convert hex color to Color object
+      Color color = hexToColor(leadStagesFunnelData.colors[i]);
+
+      result.add({
+        'stage': leadStagesFunnelData.labels[i],
+        'leadsCount': leadStagesFunnelData.values[i],
+        'color': color,
+      });
+    }
+
+    return result;
   }
 
   Widget BuildStats() {
@@ -925,49 +1047,58 @@ class _HomeScreenState extends State<HomeScreen>
                       icon: Icons.person_add_alt_1_rounded,
                       iconColor: Colors.orange,
                       title: 'New Lead',
-                      value: '15',
+                      value: controller.dashboardData.value!.newLeadCount
+                          .toString(),
                     ),
                     _buildStatCard(
                       icon: Icons.trending_up_rounded,
                       iconColor: Colors.blue,
                       title: 'Active Lead',
-                      value: '32',
+                      value: controller.dashboardData.value!.activeLeadCount
+                          .toString(),
                     ),
                     _buildStatCard(
                       icon: Icons.check_circle_rounded,
                       iconColor: Colors.green,
                       title: 'Qualified Lead',
-                      value: '18',
+                      value: controller.dashboardData.value!.qualifiedLeadCount
+                          .toString(),
                     ),
                     _buildStatCard(
                       icon: Icons.cancel_rounded,
                       iconColor: Colors.redAccent,
                       title: 'Disqualified Lead',
-                      value: '7',
+                      value: controller
+                          .dashboardData.value!.disqualifiedLeadCount
+                          .toString(),
                     ),
                     _buildStatCard(
                       icon: Icons.wallet_rounded,
                       iconColor: Colors.green,
                       title: 'Qualified Budget',
-                      value: '₹ 1,25,50,000',
+                      value: controller.dashboardData.value!.qualifiedBudget
+                          .toString(),
                     ),
                     _buildStatCard(
                       icon: Icons.money_off_rounded,
                       iconColor: Colors.redAccent,
                       title: 'Disqualified Budget',
-                      value: '₹ 35,75,000',
+                      value: controller.dashboardData.value!.disqualifiedBudget
+                          .toString(),
                     ),
                     _buildStatCard(
                       icon: Icons.track_changes_rounded,
                       iconColor: Colors.blue,
                       title: 'Target Sale',
-                      value: '₹ 85,000',
+                      value:
+                          controller.dashboardData.value!.targetSale.toString(),
                     ),
                     _buildStatCard(
                       icon: Icons.show_chart_rounded,
                       iconColor: Colors.blue,
                       title: 'Actual Sales',
-                      value: '₹ 78,500',
+                      value: controller.dashboardData.value!.actualSales
+                          .toString(),
                     ),
                     const SizedBox(), // Placeholder
                   ],
@@ -1040,19 +1171,187 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget BuildLeadPriorityChartSyncfusion() {
-    final List<_ChartData> chartData = [
-      _ChartData('Hot', 45, Colors.pinkAccent),
-      _ChartData('Warm', 35,
-          Colors.amber), // Using amber for a slightly different yellow
-      _ChartData('Cold', 15, Colors.lightBlue), // Using lightBlue
-      _ChartData('High Value', 5, Colors.teal), // Using teal
-      _ChartData('Low Value', 0,
-          Colors.purple[400]!), // Using a slightly different purple
-    ];
+  Color _parseColor(String? colorString) {
+    // Default color if input is null or invalid
+    const defaultColor = Colors.grey;
+    if (colorString == null || colorString.isEmpty) {
+      print('Null or empty color string received. Using default.');
+      return defaultColor;
+    }
 
+    // Trim whitespace for robustness
+    colorString = colorString.trim();
+
+    // 1. Check for HEX format (#RRGGBB or #AARRGGBB)
+    if (colorString.startsWith('#')) {
+      if (colorString.length == 7 || colorString.length == 9) {
+        // #RRGGBB or #AARRGGBB
+        try {
+          final buffer = StringBuffer();
+          if (colorString.length == 7)
+            buffer
+                .write('ff'); // Add alpha if missing (treat #RRGGBB as opaque)
+          buffer.write(colorString.substring(1)); // Remove '#'
+          return Color(int.parse(buffer.toString(), radix: 16));
+        } catch (e) {
+          print('Error parsing HEX color "$colorString": $e. Using default.');
+          return defaultColor;
+        }
+      } else {
+        print(
+            'Invalid HEX color format: "$colorString". Length should be 7 or 9. Using default.');
+        return defaultColor;
+      }
+    }
+    // 2. Check for RGBA format (rgba(r, g, b, a))
+    //    Case-insensitive check for 'rgba('
+    else if (colorString.toLowerCase().startsWith('rgba(') &&
+        colorString.endsWith(')')) {
+      try {
+        // Find the indices of '(' and ')'
+        final startIndex = colorString.indexOf('(') + 1;
+        final endIndex = colorString.lastIndexOf(')');
+
+        // Extract the numbers part: e.g., "255, 99, 132, 0.8"
+        final valueString = colorString.substring(startIndex, endIndex);
+        final parts = valueString.split(',');
+
+        if (parts.length == 4) {
+          // Parse R, G, B as integers, A as double
+          final r = int.parse(parts[0].trim());
+          final g = int.parse(parts[1].trim());
+          final b = int.parse(parts[2].trim());
+          final a = double.parse(parts[3].trim());
+
+          // Clamp values to valid ranges
+          final int rClamped = r.clamp(0, 255);
+          final int gClamped = g.clamp(0, 255);
+          final int bClamped = b.clamp(0, 255);
+          final double aClamped = a.clamp(0.0, 1.0);
+
+          if (r != rClamped ||
+              g != gClamped ||
+              b != bClamped ||
+              a != aClamped) {
+            print(
+                'Warning: Clamping RGBA values from "$colorString" to fit valid range.');
+          }
+
+          // Use Color.fromRGBO which takes int for R,G,B (0-255) and double for opacity (0.0-1.0)
+          return Color.fromRGBO(rClamped, gClamped, bClamped, aClamped);
+        } else {
+          print(
+              'Invalid RGBA format (expected 4 parts): "$colorString". Using default.');
+          return defaultColor;
+        }
+      } catch (e) {
+        print('Error parsing RGBA color "$colorString": $e. Using default.');
+        return defaultColor;
+      }
+    }
+    // (Optional) Add support for rgb(R, G, B) if needed, treating alpha as 1.0
+    else if (colorString.toLowerCase().startsWith('rgb(') &&
+        colorString.endsWith(')')) {
+      try {
+        final startIndex = colorString.indexOf('(') + 1;
+        final endIndex = colorString.lastIndexOf(')');
+        final valueString = colorString.substring(startIndex, endIndex);
+        final parts = valueString.split(',');
+        if (parts.length == 3) {
+          final r = int.parse(parts[0].trim()).clamp(0, 255);
+          final g = int.parse(parts[1].trim()).clamp(0, 255);
+          final b = int.parse(parts[2].trim()).clamp(0, 255);
+          return Color.fromRGBO(r, g, b, 1.0); // Full opacity
+        } else {
+          print(
+              'Invalid RGB format (expected 3 parts): "$colorString". Using default.');
+          return defaultColor;
+        }
+      } catch (e) {
+        print('Error parsing RGB color "$colorString": $e. Using default.');
+        return defaultColor;
+      }
+    }
+
+    // 3. If none of the above formats match
+    else {
+      print(
+          'Unknown or invalid color string format: "$colorString". Using default.');
+      return defaultColor;
+    }
+  }
+
+  Widget BuildLeadPriorityChartSyncfusion() {
+    // 1. Access the Data (replace 'controller' with your actual controller instance)
+    final leadData = controller.dashboardData.value?.leadPriorityData;
+
+    // Print the raw data for debugging (optional)
+    // print('Raw LeadPriorityData: ${leadData?.labels}, ${leadData?.values}, ${leadData?.colors}');
+
+    // 2. Handle Null/Empty Data
+    if (leadData == null ||
+        leadData.labels.isEmpty ||
+        leadData.values.isEmpty) {
+      // Show a loading indicator or an empty state message
+      return Container(
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: const Center(
+          // Or use a CircularProgressIndicator() if data is loading
+          child: Text(
+            'Lead priority data is not available.',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    // 3. Transform Data
+    final List<_ChartData> chartData = [];
+    for (int i = 0; i < leadData.labels.length; i++) {
+      // Ensure we don't go out of bounds if lists have different lengths
+      if (i < leadData.values.length) {
+        final label = leadData.labels[i];
+        final value = leadData.values[i];
+        final colorString =
+            leadData.colors[label]; // Get color hex string from map
+        final color = _parseColor(colorString); // Convert hex string to Color
+
+        // Optional: Skip data points with zero value if you don't want them in the chart
+        // if (value > 0) {
+        chartData.add(_ChartData(label, value, color));
+        // }
+      } else {
+        // Log a warning if lists are mismatched
+        print(
+            'Warning: Mismatch between labels and values length. Skipping label: ${leadData.labels[i]}');
+      }
+    }
+
+    // Handle case where processing resulted in empty data (e.g., all values were 0 and skipped)
+    if (chartData.isEmpty) {
+      return Container(
+        // Or similar empty state container
+        padding: const EdgeInsets.all(16.0),
+        child: const Center(child: Text('No valid chart data to display.')),
+      );
+    }
+
+    // Calculate total *after* filtering/transforming data
     final totalLeads = chartData.fold(0, (sum, data) => sum + data.y);
 
+    // 4. Use Transformed Data in the Widget
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -1084,33 +1383,57 @@ class _HomeScreenState extends State<HomeScreen>
             child: SfCircularChart(
               series: <CircularSeries<_ChartData, String>>[
                 DoughnutSeries<_ChartData, String>(
+                  // Use the dynamically generated chartData
                   dataSource: chartData,
-                  xValueMapper: (_ChartData data, _) => data.x,
-                  yValueMapper: (_ChartData data, _) => data.y,
-                  pointColorMapper: (_ChartData data, _) => data.color,
+                  xValueMapper: (_ChartData data, _) => data.x, // Label
+                  yValueMapper: (_ChartData data, _) => data.y, // Value
+                  pointColorMapper: (_ChartData data, _) => data.color, // Color
                   innerRadius: '60%',
                   radius: '80%',
-                  // Enable data labels
                   dataLabelSettings: const DataLabelSettings(
                     isVisible: true,
                     labelPosition: ChartDataLabelPosition.outside,
+                    // Display label and percentage, for example
+                    labelIntersectAction:
+                        LabelIntersectAction.shift, // Avoid overlap
                     connectorLineSettings: ConnectorLineSettings(
-                        color: Colors.grey, type: ConnectorType.curve),
+                      // length: '10%', // Adjust connector length if needed
+                      color: Colors.grey,
+                      type: ConnectorType.curve,
+                    ),
+                    // Customize label format if needed:
+                    // format: '{point.x}: {point.percentage}%',
+                    textStyle:
+                        TextStyle(fontSize: 10), // Adjust label font size
                   ),
-                  // Enable tooltip
                   enableTooltip: true,
                 )
               ],
+              // Optional: Add a title within the chart center
+              // annotations: <CircularChartAnnotation>[
+              //   CircularChartAnnotation(
+              //     widget: Container(
+              //       child: Text(
+              //         '$totalLeads\nTotal',
+              //         textAlign: TextAlign.center,
+              //         style: TextStyle(color: Colors.grey[600], fontSize: 14)
+              //       )
+              //     )
+              //   )
+              // ]
             ),
           ),
           const SizedBox(height: 16.0),
+          // Use the dynamically generated chartData for the legend
           Wrap(
-            spacing: 8.0,
-            runSpacing: 4.0,
+            spacing: 12.0, // Increased spacing
+            runSpacing: 8.0, // Increased spacing
             alignment: WrapAlignment.center,
             children: chartData.map((data) {
+              // Calculate percentage safely
               final percentage =
                   totalLeads > 0 ? (data.y / totalLeads * 100).toDouble() : 0.0;
+              // Ensure _buildLegendItemSyncfusion uses the dynamic data
               return _buildLegendItemSyncfusion(
                   data.color, data.x, data.y, percentage);
             }).toList(),
@@ -1143,13 +1466,32 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget BuildTaskOverview() {
-    final totalTasks = 50;
-    final completedTasks = 35;
-    final pendingTasks = 10;
-    final overdueTasks = 5;
+    final int totalTasks = int.tryParse(
+            controller.dashboardData.value?.totalTasks?.toString() ?? '') ??
+        0;
 
-    final completionPercentage =
-        totalTasks > 0 ? completedTasks / totalTasks : 0.0;
+    final int completedTasks = int.tryParse(
+            controller.dashboardData.value?.completedTasksCount?.toString() ??
+                '') ??
+        0;
+
+    final int pendingTasks = int.tryParse(
+            controller.dashboardData.value?.pendingTasksCount?.toString() ??
+                '') ??
+        0;
+
+    final int overdueTasks = int.tryParse(
+            controller.dashboardData.value?.overdueTasksCount?.toString() ??
+                '') ??
+        0;
+
+// ... rest of your BuildTaskOverview widget remains the same ...
+
+    final double completionPercentage =
+        totalTasks > 0 ? completedTasks.toDouble() / totalTasks : 0.0;
+
+    // Now totalTasks and completedTasks are guaranteed to be non-null ints.
+    // Ensure floating-point division by converting one operand to double.
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1186,8 +1528,8 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     _buildCircularProgress(completionPercentage),
                     const SizedBox(height: 16.0),
-                    _buildTaskInfoGrid(
-                        totalTasks, completedTasks, pendingTasks, overdueTasks),
+                    _buildTaskInfoGrid(totalTasks!, completedTasks,
+                        pendingTasks, overdueTasks),
                   ],
                 )
               else
@@ -1200,7 +1542,7 @@ class _HomeScreenState extends State<HomeScreen>
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 16.0),
-                        child: _buildTaskInfoGrid(totalTasks, completedTasks,
+                        child: _buildTaskInfoGrid(totalTasks!, completedTasks,
                             pendingTasks, overdueTasks),
                       ),
                     ),
@@ -1323,14 +1665,54 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget BuildExpenseOverviewChart() {
-    final List<_ExpenseData> expenseData = [
-      _ExpenseData('Local Expenses', 25000, 18000),
-      _ExpenseData('Outstation Expenses', 30000, 22000),
-      _ExpenseData('Miscellaneous Expenses', 15000, 12000),
-    ];
+    // Get the data from the controller
+    final expenseComparisonData =
+        controller.dashboardData.value?.expenseComparisonData;
 
+    // --- Data Transformation ---
+    List<_ExpenseData> chartData = [];
+    double maxYValue = 0;
+
+    if (expenseComparisonData != null &&
+        expenseComparisonData.labels.isNotEmpty &&
+        expenseComparisonData.allocatedBudget.length ==
+            expenseComparisonData.labels.length &&
+        expenseComparisonData.actualExpenses.length ==
+            expenseComparisonData.labels.length) {
+      for (int i = 0; i < expenseComparisonData.labels.length; i++) {
+        final label = expenseComparisonData.labels[i];
+        final allocated = expenseComparisonData.allocatedBudget[i];
+        final actual = expenseComparisonData.actualExpenses[i];
+        chartData.add(_ExpenseData(label, allocated, actual));
+        maxYValue = max(maxYValue, max(allocated, actual));
+      }
+    }
+
+    // --- Calculate Y-Axis Max/Interval ---
+    final double yAxisMaximum = (maxYValue * 1.15 / 5000).ceil() * 5000;
+    final double finalYAxisMaximum =
+        yAxisMaximum > 0 ? yAxisMaximum : 5000; // Min height 5000
+    final double yAxisInterval =
+        (finalYAxisMaximum / 5).ceilToDouble(); // ~5 intervals
+
+    // --- Widget Build ---
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Handle loading and empty states
+        if (expenseComparisonData == null) {
+          // You might want a placeholder with a fixed height here too
+          return const SizedBox(
+              height: 250, child: Center(child: CircularProgressIndicator()));
+        }
+        if (chartData.isEmpty) {
+          // Give the placeholder a defined height
+          return const SizedBox(
+              height: 100,
+              child:
+                  Center(child: Text('No expense overview data available.')));
+        }
+
+        // --- Build the Chart Container ---
         return Container(
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
@@ -1346,8 +1728,12 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           child: Column(
+            // This Column needs a defined height OR its children shouldn't use Expanded
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize:
+                MainAxisSize.min, // Allow column to shrink to content size
             children: [
+              // --- Chart Title ---
               Text(
                 'Expense Overview',
                 style: TextStyle(
@@ -1357,42 +1743,65 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               const SizedBox(height: 16.0),
+
+              // --- Chart ---
+              // Use AspectRatio instead of Expanded
               AspectRatio(
-                aspectRatio: 1.7, // Adjust as needed for better fit
+                aspectRatio: 1.7, // Adjust this value as needed for your layout
                 child: SfCartesianChart(
-                  primaryXAxis: CategoryAxis(),
+                  primaryXAxis: CategoryAxis(
+                    majorGridLines: const MajorGridLines(width: 0),
+                    axisLine: const AxisLine(width: 0),
+                    labelStyle: const TextStyle(color: Colors.black54),
+                  ),
                   primaryYAxis: NumericAxis(
                     minimum: 0,
-                    maximum: 30000, // Adjust based on your data range
-                    interval: 5000,
+                    maximum: finalYAxisMaximum,
+                    interval: yAxisInterval,
                     labelFormat: '{value}',
+                    axisLine: const AxisLine(width: 0),
+                    majorTickLines: const MajorTickLines(size: 0),
+                    labelStyle: const TextStyle(color: Colors.black54),
                   ),
                   series: <ColumnSeries<_ExpenseData, String>>[
                     ColumnSeries<_ExpenseData, String>(
-                      dataSource: expenseData,
+                      dataSource: chartData,
                       xValueMapper: (_ExpenseData data, _) => data.expenseType,
                       yValueMapper: (_ExpenseData data, _) =>
                           data.allocatedBudget,
                       name: 'Allocated Budget',
-                      color: Colors.lightBlueAccent,
+                      color: Colors.lightBlueAccent.withOpacity(0.8),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                      width: 0.7,
+                      spacing: 0.2,
                     ),
                     ColumnSeries<_ExpenseData, String>(
-                      dataSource: expenseData,
+                      dataSource: chartData,
                       xValueMapper: (_ExpenseData data, _) => data.expenseType,
                       yValueMapper: (_ExpenseData data, _) =>
                           data.actualExpenses,
                       name: 'Actual Expenses',
-                      color: Colors.pinkAccent,
+                      color: Colors.pinkAccent.withOpacity(0.8),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                      width: 0.7,
+                      spacing: 0.2,
                     ),
                   ],
                   legend: Legend(
                     isVisible: true,
                     position: LegendPosition.bottom,
                     orientation: LegendItemOrientation.horizontal,
+                    overflowMode: LegendItemOverflowMode.wrap,
+                    textStyle: const TextStyle(fontSize: 12),
                   ),
-                  tooltipBehavior: TooltipBehavior(enable: true),
+                  tooltipBehavior: TooltipBehavior(
+                    enable: true,
+                    header: '',
+                    canShowMarker: false,
+                    format: 'point.x : point.y',
+                  ),
                 ),
-              ),
+              ), // End AspectRatio
             ],
           ),
         );
@@ -1696,32 +2105,58 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildHeaders() {
     return Container(
       margin: const EdgeInsets.all(10),
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
       decoration: BoxDecoration(
         color: popupColor,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Latest Leads',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Colors.white,
-            ),
+          Row(
+            children: [
+              Icon(Icons.people_alt, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              const Text(
+                'Latest Leads',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
+            icon: const Icon(Icons.filter_list, color: Colors.white),
             color: Colors.white,
+            tooltip: 'Filter Leads',
             onSelected: (value) => _onMenuSelection(context, value),
             itemBuilder: (BuildContext context) =>
                 {'Lead Date', 'Follow-Up Date'}
                     .map(
                       (String choice) => PopupMenuItem<String>(
                         value: choice,
-                        child: Text(choice),
+                        child: Row(
+                          children: [
+                            Icon(
+                              choice == 'Lead Date'
+                                  ? Icons.calendar_today
+                                  : Icons.event_repeat,
+                              size: 18,
+                              color: Colors.blue,
+                            ),
+                            SizedBox(width: 8),
+                            Text(choice),
+                          ],
+                        ),
                       ),
                     )
                     .toList(),
@@ -1806,8 +2241,6 @@ class _HomeScreenState extends State<HomeScreen>
                 Divider(height: 1, color: Colors.grey.shade300),
                 _buildDetailRow('Lead Generated', metrics.leadGenerated),
                 Divider(height: 1, color: Colors.grey.shade300),
-                _buildDetailRow('Attendance', metrics.attendance),
-                Divider(height: 1, color: Colors.grey.shade300),
                 _buildDetailRow('Sales Achieved', metrics.salesAchieved),
               ],
             ),
@@ -1887,31 +2320,42 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildLeadList() {
-    return ListView.builder(
-      controller: controller.scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: controller.leads.length,
-      itemBuilder: (context, index) => _buildLeadItem(controller.leads[index]),
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Add refresh functionality
+        await controller.fetchAssignedLead();
+      },
+      child: ListView.builder(
+        controller: controller.scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: controller.leads.length,
+        itemBuilder: (context, index) =>
+            _buildLeadItem(controller.leads[index]),
+      ),
     );
   }
 
   Widget _buildLeadItem(LeadList lead) {
-    return Container(
+    return Card(
+      elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: InkWell(
+        onTap: () => Get.toNamed(Routes.leadDetail, arguments: lead.leadId),
         borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _buildLeadName(lead),
-          _buildLeadDate(lead),
-          _buildLeadStatus(lead),
-          _buildPriorityBadge(lead),
-        ],
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildLeadName(lead),
+              _buildLeadDate(lead),
+              _buildLeadStatus(lead),
+              _buildPriorityBadge(lead),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1919,17 +2363,29 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildLeadName(LeadList lead) {
     return Expanded(
       flex: 2,
-      child: GestureDetector(
-        onTap: () => Get.toNamed(Routes.leadDetail, arguments: lead.leadId),
-        child: Text(
-          lead.name,
-          style: const TextStyle(
-            color: Colors.blue,
-            fontWeight: FontWeight.bold,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            lead.name,
+            style: const TextStyle(
+              color: Colors.blue,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
-        ),
+          if (lead.phone.isNotEmpty)
+            Text(
+              lead.phone,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+        ],
       ),
     );
   }
@@ -1961,6 +2417,11 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildPriorityBadge(LeadList lead) {
+    // Check if priority is not empty before showing badge
+    if (lead.priority.isEmpty) {
+      return Expanded(flex: 1, child: Container());
+    }
+
     return Expanded(
       flex: 1,
       child: Container(
@@ -1968,6 +2429,13 @@ class _HomeScreenState extends State<HomeScreen>
         decoration: BoxDecoration(
           color: _getBadgeColor(lead.priority),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 2,
+              offset: Offset(0, 1),
+            ),
+          ],
         ),
         child: Text(
           lead.priority,
@@ -3016,24 +3484,22 @@ class GaugePainter extends CustomPainter {
 class PerformanceMetrics {
   final double completedTask;
   final double leadGenerated;
-  final double attendance;
   final double salesAchieved;
 
   PerformanceMetrics({
     required this.completedTask,
     required this.leadGenerated,
-    required this.attendance,
     required this.salesAchieved,
   });
 
   double calculateOverallScore() {
-    return ((completedTask + leadGenerated + attendance + salesAchieved) / 4)
+    return ((completedTask + leadGenerated + salesAchieved) / 3)
         .clamp(0.0, 100.0);
   }
 }
 
 class PerformanceAnalysisChart extends StatelessWidget {
-  final List<PerformanceData> performanceData;
+  final List<PerformanceTracking> performanceData;
 
   const PerformanceAnalysisChart({
     Key? key,
@@ -3042,19 +3508,40 @@ class PerformanceAnalysisChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Handle empty data case gracefully
+    if (performanceData.isEmpty) {
+      return Card(
+        elevation: 4,
+        color: Colors.white,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Center(
+            child: Text(
+              'No performance data available.',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Card(
       elevation: 4,
       color: Colors.white,
-      margin: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Performance Analysis',
               style: TextStyle(
                 fontSize: 18,
@@ -3062,76 +3549,157 @@ class PerformanceAnalysisChart extends StatelessWidget {
                 color: Colors.black87,
               ),
             ),
-            SizedBox(height: 16),
-            ...performanceData
-                .map((data) => _buildPerformanceRow(data))
-                .toList(),
+            const SizedBox(height: 16),
+            // Use ListView.separated for better spacing and handling many items
+            ListView.separated(
+              shrinkWrap: true, // Important when nesting ListView
+              physics:
+                  const NeverScrollableScrollPhysics(), // Disable scrolling if inside another scrollable
+              itemCount: performanceData.length,
+              itemBuilder: (context, index) {
+                return _buildPerformanceRow(performanceData[index]);
+              },
+              separatorBuilder: (context, index) =>
+                  const SizedBox(height: 12), // Space between rows
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPerformanceRow(PerformanceData data) {
+  // Helper function to determine color based on achievement percentage
+  Color _getColorForPercentage(double percentage) {
+    // Clamp percentage between 0 and potentially > 1 for color logic
+    percentage = percentage.clamp(0.0, double.infinity);
+
+    if (percentage == 0) {
+      return Colors.redAccent.shade400; // Specific color for zero achievement
+    } else if (percentage < 0.5) {
+      // Below 50%
+      return Colors.red.shade400;
+    } else if (percentage < 0.9) {
+      // Between 50% and 89.9%
+      return Colors.orange.shade400;
+    } else if (percentage < 1.0) {
+      // Between 90% and 99.9% (Target not yet met)
+      return Colors.yellow.shade700;
+    } else {
+      // 100% and above (Target met or exceeded)
+      return Colors.green.shade400;
+    }
+  }
+
+  Widget _buildPerformanceRow(PerformanceTracking data) {
+    // 1. Parse achievement and target, handle potential errors and nulls
+    final int achievedValue = int.tryParse(data.achievement ?? '') ?? 0;
+    final int targetValue = int.tryParse(data.target ?? '') ?? 0;
+
+    // 2. Check if target is defined (greater than 0)
+    final bool isTargetDefined = targetValue > 0;
+
+    // 3. Calculate percentage and bar ratio *only* if target is defined
+    double achievementPercentage = 0.0;
+    double barRatio = 0.0; // Ratio for the bar width (0.0 to 1.0)
+
+    if (isTargetDefined) {
+      // Calculate actual percentage (can be > 1.0 if achieved > target)
+      achievementPercentage = achievedValue.toDouble() / targetValue.toDouble();
+      // Calculate ratio for the bar width, clamped between 0.0 and 1.0
+      barRatio = achievementPercentage.clamp(0.0, 1.0);
+    }
+
+    // 4. Determine the color based on the *actual* percentage
+    final Color achievedColor = _getColorForPercentage(achievementPercentage);
+
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding:
+          const EdgeInsets.symmetric(vertical: 4), // Reduced vertical padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            data.label,
-            style: TextStyle(
+            data.activityName,
+            style: const TextStyle(
               fontSize: 14,
+              fontWeight: FontWeight.w500, // Slightly bolder
               color: Colors.black87,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {
               return Stack(
+                clipBehavior: Clip.none, // Allow potential markers outside
                 children: [
-                  // Target bar (light blue)
+                  // Background bar (represents 100% of target or just background)
                   Container(
-                    height: 10,
+                    height: 12, // Slightly thicker bar
                     width: constraints.maxWidth,
                     decoration: BoxDecoration(
-                      color: Colors.lightBlue.shade100,
-                      borderRadius: BorderRadius.circular(5),
+                      // Use a lighter grey for background, more prominent if target is undefined
+                      color: isTargetDefined
+                          ? Colors.grey.shade300
+                          : Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  // Achieved bar (purple)
-                  Container(
-                    height: 10,
-                    width: constraints.maxWidth * (data.achieved / data.target),
-                    decoration: BoxDecoration(
-                      color: Colors.purple,
-                      borderRadius: BorderRadius.circular(5),
+                  // Achieved bar (only shown if target is defined)
+                  if (isTargetDefined)
+                    Container(
+                      height: 12,
+                      // Calculate width based on clamped barRatio
+                      width: constraints.maxWidth * barRatio,
+                      decoration: BoxDecoration(
+                        // Use dynamic color
+                        color: achievedColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
-                  ),
+                  // Optional: Add a marker if achievement exceeds target
+                  // if (isTargetDefined && achievementPercentage > 1.0)
+                  //   Positioned(
+                  //     left: constraints.maxWidth - 2, // Position near the end of the target bar
+                  //     top: -2, // Adjust vertical position
+                  //     child: Icon(Icons.star, color: Colors.amber, size: 16),
+                  //   ),
                 ],
               );
             },
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 6),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Display raw achieved value
               Text(
-                'Achieved: ${data.achieved}%',
-                style: TextStyle(
+                'Achieved: $achievedValue',
+                style: const TextStyle(
                   fontSize: 12,
                   color: Colors.black54,
                 ),
               ),
-              Spacer(),
+              // Display raw target value OR "Target not defined"
               Text(
-                'Target: ${data.target}%',
+                isTargetDefined ? 'Target: $targetValue' : 'Target not defined',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.black54,
+                  color: isTargetDefined ? Colors.black54 : Colors.red.shade400,
+                  fontStyle:
+                      isTargetDefined ? FontStyle.normal : FontStyle.italic,
                 ),
               ),
             ],
           ),
+          // Optional: Display the calculated percentage if needed
+          // if (isTargetDefined)
+          //   Padding(
+          //     padding: const EdgeInsets.only(top: 4.0),
+          //     child: Text(
+          //       'Progress: ${(achievementPercentage * 100).toStringAsFixed(1)}%',
+          //       style: TextStyle(fontSize: 11, color: achievedColor, fontWeight: FontWeight.bold),
+          //     ),
+          //   ),
         ],
       ),
     );
@@ -3152,10 +3720,13 @@ class PerformanceData {
 
 class _ChartData {
   _ChartData(this.x, this.y, this.color);
-  final String x;
-  final int y;
-  final Color color;
+  final String x; // Label (e.g., 'Hot', 'Warm')
+  final int y; // Value (e.g., 45, 35)
+  final Color color; // Color object
 }
+
+// Helper function to parse color strings (e.g., '#FFC107') into Color objects
+// Place this outside the build method or make it a static helper method
 
 class _ExpenseData {
   _ExpenseData(this.expenseType, this.allocatedBudget, this.actualExpenses);

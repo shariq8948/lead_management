@@ -1,0 +1,465 @@
+class AppNotification {
+  final String id;
+  final String title;
+  final String description;
+  final DateTime timestamp;
+  bool isRead;
+  final String navigationTarget;
+  final String? navigationId; // New key for navigation
+  final String? imageUrl; // Optional field for an image URL
+
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.timestamp,
+    this.isRead = false,
+    this.navigationTarget = "",
+    this.navigationId, // Initialize new key
+    this.imageUrl,
+  });
+
+  // Convert a AppNotification into a Map for sqflite
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'timestamp': timestamp.toIso8601String(),
+      'isRead': isRead ? 1 : 0,
+      'navigationTarget': navigationTarget,
+      'navigationId': navigationId, // Include new key
+      'imageUrl': imageUrl,
+    };
+  }
+
+  // Convert a Map into a AppNotification
+  factory AppNotification.fromMap(Map<String, dynamic> map) {
+    return AppNotification(
+      id: map['id'],
+      title: map['title'],
+      description: map['description'],
+      timestamp: DateTime.parse(map['timestamp']),
+      isRead: map['isRead'] == 1,
+      navigationTarget: map['navigationTarget'],
+      navigationId: map['navigationId'], // Parse new key
+      imageUrl: map['imageUrl'],
+    );
+  }
+
+  // Format timestamp for display
+  String get formattedTimestamp {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
+  }
+}
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'notification_model.dart';
+
+class NotificationDatabaseHelper {
+  static Database? _database;
+
+  // Add an explicit initialization method
+  static Future<void> initDatabase() async {
+    if (_database != null) return;
+
+    String path = join(await getDatabasesPath(), 'notifications.db');
+    _database = await openDatabase(
+      path,
+      version: 2,
+      onCreate: (db, version) {
+        return db.execute(
+          '''CREATE TABLE notifications(
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            description TEXT,
+            timestamp TEXT,
+            isRead INTEGER,
+            navigationTarget TEXT,
+            navigationId TEXT,
+            imageUrl TEXT
+          )''',
+        );
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+              'ALTER TABLE notifications ADD COLUMN navigationId TEXT;');
+        }
+      },
+    );
+    print('✅ Database initialized successfully');
+  }
+
+  static Future<Database> getDatabase() async {
+    if (_database != null) return _database!;
+
+    await initDatabase();
+    return _database!;
+  }
+
+  static Future<int> insertNotification(AppNotification notification) async {
+    try {
+      final db = await getDatabase();
+
+      // Convert notification to map
+      final Map<String, dynamic> notificationMap = {
+        'id': notification.id,
+        'title': notification.title,
+        'description': notification.description,
+        'timestamp': notification.timestamp.toIso8601String(),
+        'isRead': notification.isRead ? 1 : 0,
+        'navigationTarget': notification.navigationTarget,
+        'navigationId': notification.navigationId,
+        'imageUrl': notification.imageUrl,
+      };
+
+      print('Inserting notification with ID: ${notification.id}');
+      print('Data: $notificationMap');
+
+      return await db.insert(
+        'notifications',
+        notificationMap,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (e, stack) {
+      print('❌ Error inserting notification: $e');
+      print('Stack trace: $stack');
+      return -1;
+    }
+  }
+
+  // Fetch all notifications
+  static Future<List<AppNotification>> getAllNotifications() async {
+    final db = await getDatabase();
+    final List<Map<String, dynamic>> maps = await db.query(
+      'notifications',
+      orderBy: 'timestamp DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return AppNotification.fromMap(maps[i]);
+    });
+  }
+
+  // Update notification as read
+  static Future<void> updateNotificationStatus(String id, bool isRead) async {
+    final db = await getDatabase();
+    await db.update(
+      'notifications',
+      {'isRead': isRead ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  static Future<void> deleteAllNotifications() async {
+    final db = await getDatabase();
+    await db.delete('notifications');
+  }
+
+  static Future<void> deleteNotification(String id) async {
+    final db = await getDatabase();
+    await db.delete(
+      'notifications',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+}
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import '../Tasks/taskDeatails/task_details_page.dart';
+import '../data/api/api_client.dart';
+import '../google_service/google_calendar_helper.dart';
+import '../utils/routes.dart';
+import '../utils/tags.dart';
+import '../widgets/custom_snckbar.dart';
+import 'notification_db.dart';
+import 'notification_model.dart';
+
+// Top-level function for background message handling
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('📩 Background Notification Received: ${message.messageId}');
+
+  try {
+    // Initialize the database directly
+    await NotificationDatabaseHelper.initDatabase();
+
+    if (message.notification != null) {
+      // Create notification object
+      final notification = AppNotification(
+        id: message.messageId ?? DateTime.now().toString(),
+        title: message.notification!.title ?? '',
+        description: message.notification!.body ?? 'No Description',
+        timestamp: DateTime.now(),
+        navigationTarget: message.data['navigation_target'] ?? '',
+        navigationId: message.data['navigation_id'] ?? '',
+        imageUrl: message.data['image'] ?? '',
+      );
+
+      // Insert directly into the database
+      final result =
+          await NotificationDatabaseHelper.insertNotification(notification);
+      print('✅ Background notification saved to SQLite with result: $result');
+
+      // Handle calendar event if needed
+      if (message.data['isCalender'] == "yes") {
+        // Initialize GetStorage for calendar check
+        await GetStorage.init();
+        final box = GetStorage();
+        if (box.read(StorageTags.loggedIn) == 'yes') {
+          try {
+            final client = await getGoogleAuthClient();
+            if (client != null) {
+              final isScheduled =
+                  await ApiClient().scheduleTaskOnGoogleCalendar(
+                client: client,
+                title: message.data['title'] ?? 'Untitled Event',
+                location: message.data['location'] ?? '',
+                description: message.data['description'] ?? '',
+                startDate: message.data['start_date'] ?? '',
+                endDate: message.data['end_date'] ?? '',
+              );
+              print(isScheduled
+                  ? '✅ Calendar event created in background'
+                  : '⚠️ Failed to create calendar event in background');
+            }
+          } catch (e) {
+            print('❌ Error creating calendar event in background: $e');
+          }
+        }
+      }
+    }
+
+    // Small delay to ensure operations complete
+    await Future.delayed(Duration(milliseconds: 500));
+  } catch (e, stackTrace) {
+    print('❌ Error in background handler: $e');
+    print('Stack trace: $stackTrace');
+  }
+}
+
+Future<void> initializeStorage() async {
+  await GetStorage.init();
+}
+
+class NotificationController extends GetxController {
+  final notifications = <AppNotification>[].obs;
+  late String taskId;
+  final box = GetStorage();
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeFCM();
+    loadNotifications();
+  }
+
+  Future<void> loadNotifications() async {
+    try {
+      final notificationList =
+          await NotificationDatabaseHelper.getAllNotifications();
+      notifications.assignAll(notificationList);
+      print('✅ Notifications loaded successfully: ${notifications.length}');
+    } catch (e) {
+      print('❌ Error loading notifications: $e');
+    }
+  }
+
+  Future<void> deleteNotification(String id) async {
+    try {
+      await NotificationDatabaseHelper.deleteNotification(id);
+      await loadNotifications();
+      print('✅ Notification deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting notification: $e');
+      CustomSnack.show(
+        content: "Failed to delete notification",
+        snackType: SnackType.error,
+      );
+    }
+  }
+
+  void _initializeFCM() async {
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        String? token = await messaging.getToken();
+        print('📲 FCM Token: $token');
+        await box.write('fcm_token', token);
+
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+
+        // Use the global top-level function
+        FirebaseMessaging.onBackgroundMessage(
+            firebaseMessagingBackgroundHandler);
+
+        print('✅ FCM initialized successfully');
+      } else {
+        print('⚠️ Push Notification permissions denied');
+      }
+    } catch (e) {
+      print('❌ Error initializing FCM: $e');
+    }
+  }
+
+  void deb() {
+    print("recieved");
+  }
+
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    await _processNotification(message);
+  }
+
+  Future<void> _handleNotificationTap(RemoteMessage message) async {
+    print('👆 Notification Tapped: ${message.messageId}');
+    await _processNotification(message);
+    _handleNavigation(message);
+  }
+
+  Future<void> _processNotification(RemoteMessage message) async {
+    if (message.notification != null) {
+      try {
+        final notification = AppNotification(
+          id: message.messageId ?? DateTime.now().toString(),
+          title: message.notification!.title ?? '',
+          description: message.notification!.body ?? 'No Description',
+          timestamp: DateTime.now(),
+          navigationTarget: message.data['navigation_target'] ?? '',
+          navigationId: message.data['navigation_id'] ?? '',
+          imageUrl: message.data['image'] ?? '',
+        );
+
+        await addNotification(notification);
+
+        if (message.data['isCalender'] == "yes" && await _checkUserLoggedIn()) {
+          await _handleCalendarEvent(message);
+        }
+      } catch (e) {
+        print('❌ Error processing notification: $e');
+      }
+    }
+  }
+
+  static Future<void> _handleCalendarEvent(RemoteMessage message) async {
+    try {
+      final client = await getGoogleAuthClient();
+      if (client != null) {
+        final isScheduled = await ApiClient().scheduleTaskOnGoogleCalendar(
+          client: client,
+          title: message.data['title'] ?? 'Untitled Event',
+          location: message.data['location'] ?? '',
+          description: message.data['description'] ?? '',
+          startDate: message.data['start_date'] ?? '',
+          endDate: message.data['end_date'] ?? '',
+        );
+
+        print(isScheduled
+            ? '✅ Calendar event created'
+            : '⚠️ Failed to create calendar event');
+      }
+    } catch (e) {
+      print('❌ Error creating calendar event: $e');
+    }
+  }
+
+  static Future<bool> _checkUserLoggedIn() async {
+    final box = GetStorage();
+    return box.read(StorageTags.loggedIn) == 'yes';
+  }
+
+  Future<void> addNotification(AppNotification notification) async {
+    try {
+      await NotificationDatabaseHelper.insertNotification(notification);
+      await loadNotifications();
+      print('✅ Notification added successfully');
+    } catch (e) {
+      print('❌ Error adding notification: $e');
+    }
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    try {
+      await NotificationDatabaseHelper.updateNotificationStatus(id, true);
+      await loadNotifications();
+      print('✅ Notification marked as read');
+    } catch (e) {
+      print('❌ Error marking notification as read: $e');
+    }
+  }
+
+  Future<void> clearNotifications() async {
+    try {
+      await NotificationDatabaseHelper.deleteAllNotifications();
+      await loadNotifications();
+      print('✅ All notifications cleared');
+    } catch (e) {
+      print('❌ Error clearing notifications: $e');
+      CustomSnack.show(
+        content: "Failed to clear notifications",
+        snackType: SnackType.error,
+      );
+    }
+  }
+
+  void _handleNavigation(RemoteMessage message) {
+    String navigationTarget = message.data['navigation_target'] ?? '';
+    String navigationId = message.data['navigation_id'] ?? '';
+    navigateToPage(navigationTarget, navigationId);
+  }
+
+  void navigateToPage(String navigationTarget, String? navigationId) {
+    try {
+      switch (navigationTarget) {
+        case "task_detail_page":
+          if (navigationId != null) {
+            print("📄 Navigating to task detail: $navigationId");
+            Get.to(() => TaskDetailPage(), arguments: {
+              "taskId": navigationId,
+            });
+          }
+          break;
+        case "lead_detail":
+          print("📄 Navigating to lead detail: $navigationId");
+          Get.toNamed(
+            Routes.leadDetail,
+            arguments: navigationId,
+          );
+          break;
+        case "home_page":
+          print("🏠 Navigating to home page");
+          Get.toNamed(Routes.home);
+          break;
+        default:
+          print("⚠️ Unknown navigation target: $navigationTarget");
+      }
+    } catch (e) {
+      print('❌ Navigation error: $e');
+      CustomSnack.show(
+        content: "Failed to navigate to the requested page",
+        snackType: SnackType.error,
+      );
+    }
+  }
+}

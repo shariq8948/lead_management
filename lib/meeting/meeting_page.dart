@@ -12,279 +12,465 @@ class MeetingPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Meeting'),
+        backgroundColor: Colors.teal,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Digital Clock
-                StreamBuilder(
-                  stream: Stream.periodic(Duration(seconds: 1)),
-                  builder: (context, snapshot) {
-                    final currentTime = DateTime.now();
-                    final formattedTime =
-                        '${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}:${currentTime.second.toString().padLeft(2, '0')}';
-                    final formattedDate =
-                        '${currentTime.day.toString().padLeft(2, '0')} ${[
-                      'Jan',
-                      'Feb',
-                      'Mar',
-                      'Apr',
-                      'May',
-                      'Jun',
-                      'Jul',
-                      'Aug',
-                      'Sep',
-                      'Oct',
-                      'Nov',
-                      'Dec'
-                    ][currentTime.month - 1]} ${currentTime.year}';
-                    return Column(
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.teal.shade50, Colors.white],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Digital Clock in Card
+                  Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: StreamBuilder(
+                        stream: Stream.periodic(Duration(seconds: 1)),
+                        builder: (context, snapshot) {
+                          final currentTime = DateTime.now();
+                          final formattedTime =
+                              '${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}:${currentTime.second.toString().padLeft(2, '0')}';
+                          final formattedDate =
+                              '${currentTime.day.toString().padLeft(2, '0')} ${[
+                            'Jan',
+                            'Feb',
+                            'Mar',
+                            'Apr',
+                            'May',
+                            'Jun',
+                            'Jul',
+                            'Aug',
+                            'Sep',
+                            'Oct',
+                            'Nov',
+                            'Dec'
+                          ][currentTime.month - 1]} ${currentTime.year}';
+                          return Column(
+                            children: [
+                              Text(
+                                formattedTime,
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal.shade700,
+                                  fontFamily: 'Roboto',
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                formattedDate,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.blueGrey[600],
+                                  fontFamily: 'Roboto',
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 24),
+
+                  // Start/End Meeting Button
+                  Center(
+                    child: GestureDetector(
+                      onTap: () => controller.toggleCheckIn(),
+                      child: Obx(() {
+                        return Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: controller.isCheckedIn.value
+                                ? Colors.redAccent
+                                : Colors.teal,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (controller.isCheckedIn.value
+                                        ? Colors.redAccent
+                                        : Colors.teal)
+                                    .withOpacity(0.4),
+                                spreadRadius: 3,
+                                blurRadius: 15,
+                                offset: Offset(0, 5),
+                              ),
+                            ],
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: controller.isCheckedIn.value
+                                  ? [Colors.red.shade300, Colors.red.shade700]
+                                  : [
+                                      Colors.teal.shade300,
+                                      Colors.teal.shade700
+                                    ],
+                            ),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  controller.isCheckedIn.value
+                                      ? Icons.stop_circle_outlined
+                                      : Icons.play_circle_outline,
+                                  color: Colors.white,
+                                  size: 50,
+                                ),
+                                SizedBox(height: 8),
+                                Obx(() => Text(
+                                      controller.isCheckedIn.value
+                                          ? 'End Meeting'
+                                          : 'Start Meeting',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                  SizedBox(height: 24),
+
+                  // Location Display
+                  Obx(() {
+                    return (controller.isCheckedIn.value)
+                        ? Container(
+                            padding: EdgeInsets.all(16.0),
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16.0, vertical: 8.0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.teal.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 36,
+                                  color: Colors.teal,
+                                ),
+                                SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Current Location',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.teal,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        controller.location.value.isEmpty
+                                            ? 'Fetching location...'
+                                            : controller.location.value,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : SizedBox.shrink();
+                  }),
+
+                  SizedBox(height: 20),
+
+                  // Meeting Times Cards
+                  Container(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Text(
-                          formattedTime,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blueGrey,
-                          ),
+                        // Start Time
+                        Expanded(
+                          child: Obx(() => _buildTimeCard(
+                                icon: Icons.login,
+                                time: controller.checkInTime.value.isNotEmpty
+                                    ? controller.checkInTime.value
+                                    : "00:00",
+                                label: "Start Time",
+                                iconColor: Colors.teal,
+                              )),
                         ),
-                        SizedBox(height: 8),
-                        Text(
-                          formattedDate,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.blueGrey[600],
-                          ),
+                        // End Time
+                        Expanded(
+                          child: Obx(() => _buildTimeCard(
+                                icon: Icons.logout,
+                                time: controller.checkOutTime.value.isNotEmpty
+                                    ? controller.checkOutTime.value
+                                    : "00:00",
+                                label: "End Time",
+                                iconColor: Colors.redAccent,
+                              )),
+                        ),
+                        // Total Duration
+                        Expanded(
+                          child: Obx(() => _buildTimeCard(
+                                icon: Icons.access_time,
+                                time: controller.totalHours.isNotEmpty
+                                    ? controller.totalHours
+                                    : "00:00",
+                                label: "Duration",
+                                iconColor: Colors.blueGrey,
+                              )),
                         ),
                       ],
-                    );
-                  },
-                ),
-                SizedBox(height: 20),
+                    ),
+                  ),
 
-                // Check In/Check Out Button
-                Center(
-                  child: GestureDetector(
-                    onTap: () => controller.toggleCheckIn(),
-                    child: Obx(() {
+                  // Recording Timer Display (NEW)
+                  Obx(() {
+                    if (controller.isCheckedIn.value &&
+                        controller.isRecording.value) {
                       return Container(
-                        width: 150,
-                        height: 150,
+                        margin: EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: controller.isCheckedIn.value
-                              ? Colors.red
-                              : Colors.green,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: (controller.isCheckedIn.value
-                                      ? Colors.red
-                                      : Colors.green)
-                                  .withOpacity(0.5),
-                              spreadRadius: 5,
-                              blurRadius: 10,
+                              color: Colors.grey.withOpacity(0.2),
+                              blurRadius: 6,
+                              offset: Offset(0, 3),
                             ),
                           ],
                         ),
-                        child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: controller.isPaused.value
+                                    ? Colors.orange
+                                    : Colors.red,
+                              ),
+                              child: controller.isPaused.value
+                                  ? null
+                                  : StreamBuilder(
+                                      stream: Stream.periodic(
+                                          Duration(milliseconds: 500)),
+                                      builder: (context, snapshot) {
+                                        return AnimatedOpacity(
+                                          opacity:
+                                              (DateTime.now().millisecond > 500)
+                                                  ? 1.0
+                                                  : 0.3,
+                                          duration: Duration(milliseconds: 300),
+                                          child: Container(
+                                            width: 18,
+                                            height: 18,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                            SizedBox(width: 16),
+                            StreamBuilder(
+                              stream: Stream.periodic(Duration(seconds: 1)),
+                              builder: (context, snapshot) {
+                                // This would come from your controller in a real implementation
+                                String recordingTime =
+                                    controller.getRecordingTime();
+                                return Text(
+                                  'Recording: $recordingTime',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: controller.isPaused.value
+                                        ? Colors.orange
+                                        : Colors.red,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  }),
+
+                  Spacer(),
+
+                  // Recording Controls (only appear after Meeting Start)
+                  Obx(() {
+                    if (controller.isCheckedIn.value) {
+                      return Card(
+                        margin: EdgeInsets.symmetric(vertical: 16),
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(Icons.touch_app,
-                                  color: Colors.white, size: 40),
-                              Obx(() => Text(
-                                    controller.isCheckedIn.value
-                                        ? 'Check Out'
-                                        : 'Check In',
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 16),
-                                  )),
+                              Text(
+                                "Recording Controls",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueGrey[800],
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Record/Stop Button
+                                  ElevatedButton.icon(
+                                    onPressed: () =>
+                                        controller.toggleRecording(),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      backgroundColor: controller
+                                              .isRecording.value
+                                          ? Colors.red // Stop button color
+                                          : Colors.teal, // Start button color
+                                      elevation: 3,
+                                    ),
+                                    icon: Icon(
+                                      controller.isRecording.value
+                                          ? Icons.stop
+                                          : Icons.fiber_manual_record,
+                                      color: Colors.white,
+                                    ),
+                                    label: Text(
+                                      controller.isRecording.value
+                                          ? "Stop"
+                                          : "Record",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 16),
+
+                                  // Pause/Resume Button (only visible when recording)
+                                  if (controller.isRecording.value)
+                                    ElevatedButton.icon(
+                                      onPressed: () => controller.togglePause(),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(30),
+                                        ),
+                                        backgroundColor: controller
+                                                .isPaused.value
+                                            ? Colors
+                                                .green // Resume button color
+                                            : Colors
+                                                .orange, // Pause button color
+                                        elevation: 3,
+                                      ),
+                                      icon: Icon(
+                                        controller.isPaused.value
+                                            ? Icons.play_arrow
+                                            : Icons.pause,
+                                        color: Colors.white,
+                                      ),
+                                      label: Text(
+                                        controller.isPaused.value
+                                            ? "Resume"
+                                            : "Pause",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
                       );
-                    }),
-                  ),
-                ),
-                SizedBox(height: 20),
-
-                // Location Display
-                Obx(() {
-                  return (controller.isCheckedIn.value)
-                      ? Container(
-                          padding: EdgeInsets.all(16.0),
-                          margin: EdgeInsets.symmetric(
-                              horizontal: 20.0, vertical: 10.0),
-                          decoration: BoxDecoration(
-                            color: Colors.teal.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12.0),
-                            border: Border.all(color: Colors.teal, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.teal.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: Offset(2, 4), // Shadow position
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 40,
-                                color: Colors.teal,
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                controller.location.value.isEmpty
-                                    ? 'Tap Check In to get location'
-                                    : 'Location:',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.teal,
-                                ),
-                              ),
-                              if (controller.location.value.isNotEmpty)
-                                Text(
-                                  controller.location.value,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        )
-                      : SizedBox.shrink();
-                }),
-
-                SizedBox(height: 20),
-
-                // Check-In/Check-Out Times
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Check-In Card
-                      Obx(() => _buildTimeCard(
-                            icon: Icons.arrow_circle_down_outlined,
-                            time: controller.checkInTime.value.isNotEmpty
-                                ? controller.checkInTime.value
-                                : "00:00",
-                            label: "Check In",
-                            iconColor: Colors.green,
-                          )),
-                      // Check-Out Card
-                      Obx(() => _buildTimeCard(
-                            icon: Icons.arrow_circle_up_outlined,
-                            time: controller.checkOutTime.value.isNotEmpty
-                                ? controller.checkOutTime.value
-                                : "00:00",
-                            label: "Check Out",
-                            iconColor: Colors.red,
-                          )),
-                      // Total Hours Card
-                      Obx(() => _buildTimeCard(
-                            icon: Icons.access_time_outlined,
-                            time: controller.totalHours.isNotEmpty
-                                ? controller.totalHours
-                                : "00:00",
-                            label: "Total Hrs",
-                            iconColor: Colors.teal,
-                          )),
-                    ],
-                  ),
-                ),
-                Spacer(),
-
-                // Recording Controls (only appear after Check-In)
-                Obx(() {
-                  if (controller.isCheckedIn.value) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Displaying current state (Recording, Paused, etc.)
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 20),
-                          child: Icon(
-                            controller.isRecording.value
-                                ? (controller.isPaused.value
-                                    ? Icons.pause_circle_filled
-                                    : Icons.record_voice_over)
-                                : null,
-                            size: 50,
-                            color: controller.isRecording.value
-                                ? Colors.green
-                                : Colors.grey,
-                          ),
+                    } else {
+                      return Container(
+                        margin: EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
                         ),
-
-                        ElevatedButton(
-                          onPressed: () => controller.toggleRecording(),
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 30, vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.meeting_room_outlined,
+                              size: 48,
+                              color: Colors.grey.shade500,
                             ),
-                            backgroundColor: controller.isRecording.value
-                                ? Colors.red // Stop button color
-                                : Colors.orange, // Start button color
-                            elevation: 5, // Slight shadow for the button
-                          ),
-                          child: Obx(() => Icon(
-                                controller.isRecording.value
-                                    ? Icons.stop
-                                    : Icons.play_arrow,
-                                size: 30,
-                                color: Colors.white,
-                              )),
-                        ),
-                        SizedBox(height: 15),
-
-                        // Pause/Resume Button
-                        if (controller.isRecording.value)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton(
-                                onPressed: () => controller.togglePause(),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: controller.isPaused.value
-                                      ? Colors.green // Resume button color
-                                      : Colors.blue, // Pause button color
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 25, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  elevation: 5, // Slight shadow
-                                ),
-                                child: Obx(() => Icon(
-                                      controller.isPaused.value
-                                          ? Icons.play_arrow
-                                          : Icons.pause,
-                                      size: 30,
-                                      color: Colors.white,
-                                    )),
+                            SizedBox(height: 16),
+                            Text(
+                              "Start your meeting to access recording controls",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade700,
                               ),
-                              SizedBox(width: 10),
-                            ],
-                          ),
-                      ],
-                    );
-                  } else {
-                    return SizedBox.shrink();
-                  }
-                }),
-              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  }),
+                ],
+              ),
             ),
           ),
 
@@ -292,23 +478,21 @@ class MeetingPage extends StatelessWidget {
           Obx(() {
             if (controller.isFetchingLocation.value) {
               return Container(
-                color:
-                    Colors.black.withOpacity(0.5), // Semi-transparent overlay
+                color: Colors.black.withOpacity(0.7),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CustomLoader(
-                        size: 80,
-                      ), // Loading spinner
-                      SizedBox(height: 20),
+                      CustomLoader(size: 80),
+                      SizedBox(height: 24),
                       AnimatedTextKit(
                         animatedTexts: [
                           TypewriterAnimatedText(
                             'Fetching Location',
                             textStyle: const TextStyle(
-                              fontSize: 32.0,
+                              fontSize: 24.0,
                               fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                             speed: const Duration(milliseconds: 100),
                           ),
@@ -323,7 +507,7 @@ class MeetingPage extends StatelessWidget {
                 ),
               );
             }
-            return SizedBox.shrink(); // Empty space when not fetching location
+            return SizedBox.shrink();
           }),
         ],
       ),
@@ -336,32 +520,41 @@ class MeetingPage extends StatelessWidget {
     required String label,
     required Color iconColor,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 40,
-          color: iconColor,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: iconColor,
+            ),
+            SizedBox(height: 8),
+            Text(
+              time,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+          ],
         ),
-        SizedBox(height: 8),
-        Text(
-          time,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.black54,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
